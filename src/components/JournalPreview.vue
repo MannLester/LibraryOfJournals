@@ -15,11 +15,11 @@
       <div class="rounded-lg shadow-lg overflow-hidden relative transform rotate-0" 
            style="background-color: #f5efd5; box-shadow: 0 10px 25px rgba(0,0,0,0.1); transform-style: preserve-3d; z-index: 10;">
       <!-- Journal Header -->
-      <div class="p-6 border-b border-gray-100" style="background-color: #f5efd5;">
+      <div class="p-6" :style="{backgroundColor: getPageColor()}">
         <div class="flex justify-between items-center">
           <div class="text-left">
-            <h2 class="text-3xl font-cormorant font-bold">{{ title }}</h2>
-            <p class="text-gray-500 text-sm mt-1">{{ date }}</p>
+            <h2 class="text-3xl font-cormorant font-bold">{{ getPageTitle() }}</h2>
+            <p class="text-gray-500 text-sm mt-1">{{ getPageDate() }}</p>
           </div>
           <div class="flex space-x-4">
             <button class="text-gray-500 hover:text-gray-700">
@@ -45,14 +45,14 @@
       </div>
       
       <!-- Journal Content - with handwritten style -->
-      <div class="p-8 min-h-[200px]" style="background-color: #f5efd5;">
+      <div class="p-8 min-h-[200px]" :style="{backgroundColor: getPageColor()}">
         <p class="font-caveat text-2xl leading-relaxed text-gray-800 text-center">
-          {{ content }}
+          {{ getPageContent() }}
         </p>
       </div>
       
       <!-- Journal Footer with page number and next button -->
-      <div class="px-6 py-4 border-t border-gray-100 flex items-center" style="background-color: #f5efd5;">
+      <div class="px-6 py-4 flex items-center" :style="{backgroundColor: getPageColor()}">
         <!-- Previous Button - Only show if not on first page -->
         <div class="w-1/3 flex justify-start">
           <button 
@@ -98,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-defineProps({
+const props = defineProps({
   title: {
     type: String,
     default: 'Morning Reflections'
@@ -130,6 +130,39 @@ function nextPage() {
 
 function prevPage() {
   emit('prev-page');
+}
+
+// Functions to handle multi-page content using Number comparison instead of strict equality
+function getPageTitle() {
+  const page = Number(props.currentPage);
+  if (page === 1) return props.title;
+  if (page === 2) return 'Travel Memories: Venice';
+  if (page === 3) return 'Creative Inspiration';
+  return props.title;
+}
+
+function getPageDate() {
+  const page = Number(props.currentPage);
+  if (page === 1) return props.date;
+  if (page === 2) return 'April 3, 2023';
+  if (page === 3) return 'June 21, 2023';
+  return props.date;
+}
+
+function getPageContent() {
+  const page = Number(props.currentPage);
+  if (page === 1) return props.content;
+  if (page === 2) return 'The canals of Venice hold more stories than I could ever capture. As our gondola glided under the Bridge of Sighs, I felt the weight of centuries of human experience...';
+  if (page === 3) return 'Ideas come at the strangest moments. Today while watching the rain cascade down my window, I realized the pattern of water droplets resembled the musical notation I\'ve been struggling with for weeks...';
+  return props.content;
+}
+
+function getPageColor() {
+  const page = Number(props.currentPage);
+  if (page === 1) return '#f5efd5'; // Soft beige
+  if (page === 2) return '#e6f3f8'; // Light blue for Venice water theme
+  if (page === 3) return '#f0e6f5'; // Soft lavender for creative inspiration
+  return '#f5efd5';
 }
 </script>
 
