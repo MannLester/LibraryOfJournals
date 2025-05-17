@@ -7,7 +7,7 @@ import bgImage from './assets/bgImage.jpg'
 <template>
   <Header />
   <div class="content-area">
-    <img :src="bgImage" class="bg-image" alt="" />
+    <!-- Remove the global background image and let background color handle it -->
     <div class="content-wrapper">
       <LandingPage />
     </div>
@@ -41,6 +41,7 @@ import bgImage from './assets/bgImage.jpg'
   z-index: 5;
   width: 100%;
   height: 100%;
+  isolation: isolate; /* Creates a new stacking context */
 }
 
 .bg-image {
@@ -50,8 +51,9 @@ import bgImage from './assets/bgImage.jpg'
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.2;
-  z-index: 6;
+  opacity: 0.5; /* Increased opacity to make it more visible */
+  z-index: 10; /* Much higher z-index */
+  pointer-events: none; /* Allows clicking through */
 }
 
 

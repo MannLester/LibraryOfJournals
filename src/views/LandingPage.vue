@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen" style="position: relative; background-color: #F5F3EE;">
+  <div class="min-h-screen landing-bg" style="position: relative;">
     <!-- Solid background color for now -->
     <!-- Header will be imported in App.vue -->
     
@@ -38,6 +38,26 @@ function handleNextPage() {
 
 <style scoped>
 /* Component-specific styles */
+.landing-bg {
+  position: relative;
+}
+
+.landing-bg::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #F5F3EE;
+  background-image: url('../assets/bgImage.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.2;
+  z-index: -1;
+}
+
 .bg-container {
   position: absolute;
   top: 0;

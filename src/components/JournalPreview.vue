@@ -1,13 +1,15 @@
 <template>
-  <!-- Journal Preview Component -->
+  <!-- Journal Preview Component with isolation -->
   <div class="journal-preview">
-    <!-- Background rotated white square with shadow -->
-    <div class="absolute left-[-35%] bottom-[20%] w-[40%] h-[80%] bg-white rounded-lg shadow-xl" 
-         style="transform: rotate(18deg); z-index: 5; box-shadow: 2px 4px 20px rgba(0,0,0,0.08);"></div>
-    
-    <!-- Paper effect with shadow/fold styling -->
-    <div class="rounded-lg shadow-lg overflow-hidden relative transform rotate-0" 
-         style="background-color: #f5efd5; box-shadow: 0 10px 25px rgba(0,0,0,0.1); transform-style: preserve-3d; z-index: 25;">
+    <!-- Container that creates an isolated stacking context -->
+    <div class="journal-container">
+      <!-- Background rotated white square with shadow -->
+      <div class="absolute left-[-35%] bottom-[20%] w-[40%] h-[80%] bg-white rounded-lg shadow-xl" 
+           style="transform: rotate(18deg); z-index: 5; box-shadow: 2px 4px 20px rgba(0,0,0,0.08);"></div>
+      
+      <!-- Paper effect with shadow/fold styling -->
+      <div class="rounded-lg shadow-lg overflow-hidden relative transform rotate-0" 
+           style="background-color: #f5efd5; box-shadow: 0 10px 25px rgba(0,0,0,0.1); transform-style: preserve-3d; z-index: 10;">
       <!-- Journal Header -->
       <div class="p-6 border-b border-gray-100" style="background-color: #f5efd5;">
         <div class="flex justify-between items-center">
@@ -66,10 +68,11 @@
       
       <!-- Add subtle folded corner effect -->
       <div class="absolute bottom-0 right-0 w-16 h-16 bg-gray-100 transform rotate-45 translate-x-8 translate-y-8 opacity-50 pointer-events-none"></div>
+      </div>
+      
+      <!-- Add page shadow underneath -->
+      <div class="absolute bottom-0 left-0 right-0 h-4 bg-gray-800 opacity-5 rounded-b-full blur-md transform translate-y-2 mx-8"></div>
     </div>
-    
-    <!-- Add page shadow underneath -->
-    <div class="absolute bottom-0 left-0 right-0 h-4 bg-gray-800 opacity-5 rounded-b-full blur-md transform translate-y-2 mx-8"></div>
   </div>
 </template>
 
@@ -109,5 +112,11 @@ function nextPage() {
 .journal-preview {
   position: relative;
   width: 100%;
+}
+
+.journal-container {
+  position: relative;
+  isolation: isolate; /* Creates a new stacking context */
+  background-color: transparent;
 }
 </style>
