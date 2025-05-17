@@ -1,0 +1,194 @@
+# 📾 Software Requirements Specification (SRS)
+
+## 📘 Project Name
+
+**MyJournal** — A Personal and Public Journal Book Application
+
+---
+
+## 🛍️ Overview
+
+MyJournal is a multi-platform (mobile and desktop) journal app that encourages emotional self-expression through a book-like writing experience. Users can write journal entries structured as "chapters," design their own book cover and theme, set writing timers, and even share journals publicly or via invitation. The platform is ideal for both private reflection and public storytelling.
+
+---
+
+## 🎯 Goals
+
+* Encourage habitual journaling with timer reminders
+* Offer a book-like structure and customizability
+* Ensure user emotional attachment (not corporate-feeling)
+* Support both private and public journal sharing
+* Be cross-platform (web, mobile)
+* Optimize storage and cost-efficiency
+
+---
+
+## 🔑 Core Features
+
+### ✍️ Journal Writing
+
+* Users write chapters under a journal (book)
+* Each chapter is saved as a document in **MongoDB**
+* A Firestore reference stores only the metadata and MongoDB document ID
+
+### ⏲️ Writing Timers
+
+* Users can set reminders/timers for journal writing
+* Push notifications supported via Capacitor (for mobile)
+
+### 📚 Book & Chapter System
+
+* Journals have book-like structure with chapters
+* Chapters act as both content and tags
+
+### 🎨 Book Customization
+
+* Front cover design (title, background, theme color)
+* Typography customization (fonts, sizes, line spacing)
+* Light/Dark Mode toggle
+
+### 🧠 Writer’s Block Solution
+
+* Allow viewing of public journals for inspiration
+
+### 🗣️ Speech-to-Text Support
+
+* Voice input for writing (Web Speech API or platform-native)
+
+### 🌐 Journal Sharing
+
+* Make journal public or sharable via invite code
+* Readers can access only the readable view
+
+### 🕰️ Version History
+
+* Save versions of chapter drafts in MongoDB with timestamp
+
+### 📴 Offline Mode
+
+* Offline journal creation and saving using local storage/cache
+* Sync with MongoDB and Firestore once back online
+
+### 📄 End-of-Book Export
+
+* Export full book as PDF or Markdown
+
+### 🔐 Secure Journals
+
+* Encrypted data-in-transit (HTTPS)
+* MongoDB stores userId for access control
+* Firebase Auth used for authentication
+
+---
+
+## 💽 Supported Platforms
+
+* **Desktop:** Web App
+* **Mobile:** Progressive Web App (PWA) or Capacitor-based native app
+
+---
+
+## 🏠 Tech Stack
+
+| Layer            | Tech                                 | Purpose                                   |
+| ---------------- | ------------------------------------ | ----------------------------------------- |
+| Frontend         | Vue 3 + TailwindCSS                  | UI/UX                                     |
+| Cross-platform   | Capacitor                            | Wrap PWA as native apps                   |
+| Authentication   | Firebase Auth                        | User management                           |
+| Metadata Storage | Firestore                            | Book/chapter metadata, settings           |
+| Content Storage  | MongoDB Atlas                        | Full text of chapters and version history |
+| Backend API      | Node.js + Express                    | Interface to MongoDB                      |
+| Deployment       | Vercel / Render / Firebase Functions | Host Express APIs and frontend            |
+
+---
+
+## 🛠️ Data Structure Overview
+
+### Firestore - Journal Metadata
+
+```json
+"journals": [
+  {
+    "journalId": "abc123",
+    "userId": "uid123",
+    "title": "My Journey",
+    "coverImage": "url",
+    "chapters": [
+      {
+        "chapterTitle": "Chapter 1",
+        "mongoRefId": "664fc23ac1...",
+        "createdAt": "..."
+      }
+    ],
+    "isPublic": true,
+    "createdAt": "..."
+  }
+]
+```
+
+### MongoDB - Chapter Content
+
+```json
+{
+  "_id": "auto_generated",
+  "userId": "firebaseUID123",
+  "journalId": "abc123",
+  "chapterTitle": "First Entry",
+  "content": "Today I felt...",
+  "createdAt": "...",
+  "version": [
+    {
+      "content": "Old version text...",
+      "timestamp": "..."
+    }
+  ]
+}
+```
+
+---
+
+## ⎡ Initial Version Rollout (MVP Plan)
+
+### 🗓️ Phase 1: Core Backend
+
+*
+
+### 🧪 Phase 2: Journal Writing UX
+
+*
+
+### 🌍 Phase 3: Sharing & View
+
+*
+
+### 📲 Phase 4: Offline + Export
+
+*
+
+---
+
+## 🔒 Security & Access
+
+* Firebase Auth tokens to verify user identity
+* MongoDB documents filtered per `userId`
+* HTTPS enforced for all API calls
+
+---
+
+## 🧪 Testing Strategy
+
+* Unit tests for API endpoints
+* Integration test with Firestore and MongoDB references
+* Manual QA on mobile and desktop views
+
+---
+
+## 📌 Notes
+
+* Avoid Firebase Storage to reduce costs
+* Only store IDs and metadata in Firestore
+* Full chapter content lives in MongoDB
+
+---
+
+Let me know if you'd like a visual ERD (Entity Relationship Diagram) or API documentation next.
