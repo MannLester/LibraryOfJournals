@@ -3,9 +3,13 @@
   <div class="journal-preview">
     <!-- Container that creates an isolated stacking context -->
     <div class="journal-container">
-      <!-- Background rotated white square with shadow -->
+      <!-- Background rotated white square on left with shadow -->
       <div class="absolute left-[-35%] bottom-[20%] w-[40%] h-[80%] bg-white rounded-lg shadow-xl" 
            style="transform: rotate(18deg); z-index: 5; box-shadow: 2px 4px 20px rgba(0,0,0,0.08);"></div>
+      
+      <!-- NEW: Background rotated white square on right with shadow -->
+      <div class="absolute right-[-48%] bottom-[10%] w-[40%] h-[90%] bg-white rounded-lg shadow-xl" 
+           style="transform: rotate(-18deg); z-index: 5; box-shadow: 2px 4px 20px rgba(0,0,0,0.08);"></div>
       
       <!-- Paper effect with shadow/fold styling -->
       <div class="rounded-lg shadow-lg overflow-hidden relative transform rotate-0" 
