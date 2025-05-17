@@ -53,12 +53,29 @@
       
       <!-- Journal Footer with page number and next button -->
       <div class="px-6 py-4 border-t border-gray-100 flex items-center" style="background-color: #f5efd5;">
-        <div class="w-1/3"></div>
+        <!-- Previous Button - Only show if not on first page -->
+        <div class="w-1/3 flex justify-start">
+          <button 
+            v-if="currentPage > 1"
+            class="flex items-center text-gray-700 hover:text-signup-pink transition-colors duration-200"
+            @click="prevPage"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Prev
+          </button>
+        </div>
+        
+        <!-- Page Counter -->
         <div class="w-1/3 text-center">
           <div class="text-sm text-gray-500">Page {{ currentPage }} of {{ totalPages }}</div>
         </div>
+        
+        <!-- Next Button - Only show if not on last page -->
         <div class="w-1/3 flex justify-end">
           <button 
+            v-if="currentPage < totalPages"
             class="flex items-center text-gray-700 hover:text-signup-pink transition-colors duration-200"
             @click="nextPage"
           >
@@ -104,11 +121,15 @@ defineProps({
   }
 });
 
-// Method to emit an event when the Next button is clicked
-const emit = defineEmits(['next-page']);
+// Methods to emit events when navigation buttons are clicked
+const emit = defineEmits(['next-page', 'prev-page']);
 
 function nextPage() {
   emit('next-page');
+}
+
+function prevPage() {
+  emit('prev-page');
 }
 </script>
 

@@ -12,7 +12,8 @@
     <!-- Journal Preview Section -->
     <section class="max-w-4xl mx-auto px-4 relative mt-4">
       <JournalPreview 
-        @next-page="handleNextPage" 
+        @next-page="handleNextPage"
+        @prev-page="handlePrevPage" 
         :current-page="currentPage" 
         :total-pages="totalPages"
       />
@@ -32,6 +33,13 @@ const totalPages = ref(3);
 function handleNextPage() {
   if (currentPage.value < totalPages.value) {
     currentPage.value++;
+  }
+}
+
+// Handler for previous page button click
+function handlePrevPage() {
+  if (currentPage.value > 1) {
+    currentPage.value--;
   }
 }
 </script>
