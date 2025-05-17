@@ -1,6 +1,6 @@
 <template>
-  <header style="background-color: #FFFFFF; padding: 14px 0; border-bottom: 1px solid #f5f5f5; position: sticky; top: 0; z-index: 1000;">
-    <div style="max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+  <div style="width: 100%; background-color: #FFFFFF; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid #f5f5f5; margin: 0; padding: 0; box-sizing: border-box;">
+    <div style="width: 100%; padding: 14px 0; margin: 0; display: flex; align-items: center; justify-content: space-between;">
       <!-- Left: Logo and Brand Name -->
       <div style="display: flex; align-items: center;">
         <img src="../assets/LoJ_logo.png" alt="Library of Journals Logo" style="height: 42px; width: auto;">
@@ -31,11 +31,11 @@
       
       <!-- Right: Auth Buttons -->
       <div style="display: flex; align-items: center;">
-        <button style="font-family: 'Roboto', sans-serif; font-size: 0.925rem; padding: 8px 20px; border-radius: 4px; background-color: #EAEAEA; border: none; margin-right: 14px; cursor: pointer;">Log In</button>
-        <button style="font-family: 'Roboto', sans-serif; font-size: 0.925rem; padding: 8px 20px; border-radius: 4px; background-color: #E9184C; color: white; border: none; cursor: pointer;">Sign up</button>
+        <button style="font-family: 'Roboto', sans-serif; font-size: 0.95rem; padding: 9px 22px; border-radius: 4px; background-color: #EAEAEA; border: none; margin-right: 14px; cursor: pointer;">Log In</button>
+        <button style="font-family: 'Roboto', sans-serif; font-size: 0.95rem; padding: 9px 22px; border-radius: 4px; background-color: #E9184C; color: white; border: none; cursor: pointer;">Sign up</button>
       </div>
     </div>
-  </header>
+  </div>
 </template>
 
 <script setup lang="ts">
