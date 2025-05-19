@@ -2,6 +2,7 @@
 import type { User } from 'firebase/auth';
 import { 
   signInWithGoogle, 
+  signUpWithGoogle, 
   logOut, 
   getCurrentUser, 
   onAuthStateChange 
@@ -62,7 +63,7 @@ export const getAuthState = () => {
 };
 
 /**
- * Sign in with Google
+ * Sign in with Google (with persistence)
  * This will trigger the auth state change listener
  */
 export const signIn = async () => {
@@ -71,6 +72,20 @@ export const signIn = async () => {
     return result;
   } catch (error) {
     console.error('Error signing in:', error);
+    throw error;
+  }
+};
+
+/**
+ * Sign up with Google (without persistence - won't remember between sessions)
+ * This will trigger the auth state change listener
+ */
+export const signUp = async () => {
+  try {
+    const result = await signUpWithGoogle();
+    return result;
+  } catch (error) {
+    console.error('Error signing up:', error);
     throw error;
   }
 };

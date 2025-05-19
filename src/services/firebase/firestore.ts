@@ -52,31 +52,23 @@ export const createOrUpdateAccount = async (user: User): Promise<AccountData> =>
   try {
     const { uid, email, displayName, photoURL } = user;
     
+    console.log('Creating/updating account for user:', { uid, email, displayName });
+    console.log('Profile URL from Google:', photoURL);
+    
     if (!email) {
       throw new Error("User email is required");
     }
     
     // Check if account already exists
     const existingAccount = await getAccount(uid);
+    console.log('Existing account:', existingAccount);
     
     // Get username from display name or email
     const username = displayName || email.split('@')[0];
     
-    // Handle profile image
-    let imageLink = '';
-    
-    // Always use the photoURL if available (including Google profile images)
-    if (photoURL) {
-      imageLink = photoURL;
-    }
-    // If no photoURL provided but existing account has image, keep using it
-    else if (existingAccount && existingAccount.imageLink) {
-      imageLink = existingAccount.imageLink;
-    }
-    // Fallback to a generated avatar if no image available
-    else {
-      imageLink = `https://ui-avatars.com/api/?background=random&name=${encodeURIComponent(username)}`;
-    }
+    // USE THE GOOGLE PROFILE PICTURE URL directly
+    const imageLink = photoURL || '';
+    console.log('Using Google profile image link:', imageLink);
     
     // Account data to save
     const accountData: AccountData = {

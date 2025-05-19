@@ -4,6 +4,7 @@ import {
   initAuthService, 
   getAuthState, 
   signIn, 
+  signUp,
   signOut 
 } from '../services/auth/authService';
 import type { AccountData } from '../services/firebase/firestore';
@@ -54,6 +55,20 @@ export default function useAuth() {
     }
   };
   
+  // Signup uses session persistence (won't remember between browser sessions)
+  const signup = async () => {
+    try {
+      isLoading.value = true;
+      // Use the session-only auth method that won't persist between browser restarts
+      await signUp();
+      return true;
+    } catch (error) {
+      console.error('Signup error:', error);
+      isLoading.value = false;
+      throw error;
+    }
+  };
+  
   const logout = async () => {
     try {
       isLoading.value = true;
@@ -72,6 +87,7 @@ export default function useAuth() {
     isAuthenticated,
     isLoading,
     login,
+    signup,
     logout
   };
 }

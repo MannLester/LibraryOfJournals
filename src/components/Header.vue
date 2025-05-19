@@ -32,14 +32,15 @@
       </nav>
       
       <!-- Right: Auth Buttons -->
-      <div class="auth-buttons" v-if="!currentUser">
-        <button class="login-btn" @click="handleGoogleAuth">Log In with Google</button>
-        <button class="signup-btn" @click="handleGoogleAuth">Sign up</button>
+      <div class="auth-buttons" v-if="!isAuthenticated">
+        <button class="login-btn" @click="handleLogin">Log In with Google</button>
+        <button class="signup-btn" @click="handleSignup">Sign up</button>
       </div>
       <div class="auth-buttons" v-else>
         <div class="user-profile">
-          <img v-if="currentUser.photoURL" :src="currentUser.photoURL" class="user-avatar" alt="Profile" />
-          <span class="user-name">{{ currentUser.displayName || 'User' }}</span>
+          <!-- Display Google profile picture from imageLink -->
+          <img v-if="account && account.imageLink" :src="account.imageLink" class="user-avatar" :alt="account?.username || 'User'" />
+          <span class="user-name">{{ account?.username || 'User' }}</span>
           <button class="logout-btn" @click="handleLogout">Logout</button>
         </div>
       </div>
@@ -189,41 +190,34 @@ header {
 </style>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { User } from 'firebase/auth';
-import { signInWithGoogle, logOut, onAuthStateChange } from '../services/firebase/auth';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
+import useAuth from '../composables/useAuth';
 
-// User authentication state
-const currentUser = ref<User | null>(null);
-let unsubscribeAuth: () => void;
+// Use our custom auth composable
+const { user, account, isAuthenticated, login, signup, logout } = useAuth();
 
-// Setup auth state listener when component mounts
-onMounted(() => {
-  unsubscribeAuth = onAuthStateChange((user) => {
-    currentUser.value = user;
-  });
-});
-
-// Clean up auth listener when component unmounts
-onUnmounted(() => {
-  if (unsubscribeAuth) {
-    unsubscribeAuth();
-  }
-});
-
-// Handle Google authentication
-async function handleGoogleAuth() {
+// Handle login
+async function handleLogin() {
   try {
-    await signInWithGoogle();
+    await login();
   } catch (error) {
     console.error('Authentication failed:', error);
+  }
+}
+
+// Handle signup - forces logout first for fresh sign-up
+async function handleSignup() {
+  try {
+    await signup();
+  } catch (error) {
+    console.error('Signup failed:', error);
   }
 }
 
 // Handle logout
 async function handleLogout() {
   try {
-    await logOut();
+    await logout();
   } catch (error) {
     console.error('Logout failed:', error);
   }
