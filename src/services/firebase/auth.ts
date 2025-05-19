@@ -2,9 +2,9 @@ import {
   GoogleAuthProvider, 
   signInWithPopup, 
   signOut, 
-  onAuthStateChanged, 
-  User 
+  onAuthStateChanged
 } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import { auth } from './config';
 
 // Create a Google auth provider
