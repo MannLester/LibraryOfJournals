@@ -115,7 +115,7 @@
     </section>
 
     <!-- Features Grid Section -->
-    <section class="py-24 px-4">
+    <section id="features" class="py-24 px-4">
       <div class="max-w-7xl mx-auto">
         <h2 class="text-5xl font-cormorant font-bold text-center mb-4">Crafted for Your Journey</h2>
         <p class="text-xl text-gray-600 text-center mb-16">Every feature designed to enhance your writing experience</p>
@@ -207,7 +207,7 @@
     </section>
 
     <!-- Community Stories Section -->
-    <section class="py-32 px-4 relative">
+    <section id="testimonials" class="py-32 px-4 relative">
       <div class="max-w-7xl mx-auto">
         <h2 class="text-5xl font-cormorant font-bold text-center mb-4">Stories from Our Community</h2>
         <p class="text-xl text-gray-600 text-center mb-16">Join some of our writers documenting their journey</p>
@@ -281,7 +281,7 @@
           </div>
           
           <!-- CTA button -->
-          <a href="#" class="inline-block px-10 py-4 rounded-full bg-[#ED6A8F] text-white text-lg font-medium hover:bg-opacity-90 transition duration-300 shadow-md mb-6">
+          <a href="#" class="inline-block px-10 py-4 rounded-full bg-[#ED6A8F] text-white text-lg font-medium hover:bg-opacity-90 transition duration-300 shadow-md mb-6 blink-button">
             Create Your First Journal
           </a>
           
@@ -292,7 +292,14 @@
     </section>
 
     <!-- Footer Section -->
-    <footer class="py-16 px-4 bg-[#f5f5f5]">
+    <section id="contacts" class="py-16 px-4 bg-[#f5f5f5]">
+      <!-- Contacts Section -->
+      <div class="max-w-7xl mx-auto mb-16">
+        <h2 class="text-5xl font-cormorant font-bold text-center mb-4">Get In Touch</h2>
+        <p class="text-xl text-gray-600 text-center mb-8">We'd love to hear from you</p>
+      </div>
+      
+    <!-- Footer Section -->
       <div class="max-w-7xl mx-auto">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           <!-- Brand column -->
@@ -306,7 +313,7 @@
           <div>
             <h4 class="font-bold mb-4">Explore</h4>
             <ul class="space-y-2">
-              <li><a href="#" class="text-gray-600 hover:text-gray-900">Features</a></li>
+              <li><a href="#features" class="text-gray-600 hover:text-gray-900">Features</a></li>
               <li><a href="#" class="text-gray-600 hover:text-gray-900">Community Journals</a></li>
               <li><a href="#" class="text-gray-600 hover:text-gray-900">Writing Prompts</a></li>
               <li><a href="#" class="text-gray-600 hover:text-gray-900">Pricing</a></li>
@@ -346,7 +353,7 @@
           </div>
         </div>
       </div>
-    </footer>
+    </section>
     </div>
   </div>
 </template>
@@ -433,5 +440,21 @@ function handlePrevPage() {
 
 .timeline-gradient {
   background: linear-gradient(to bottom, rgba(233, 30, 99, 0.8), rgba(233, 30, 99, 0.1) 30%, rgba(233, 30, 99, 0.05) 70%, rgba(233, 30, 99, 0.8));
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes blink {
+  0% { opacity: 1; box-shadow: 0 0 10px #ED6A8F; }
+  50% { opacity: 0.7; box-shadow: 0 0 20px #ED6A8F; }
+  100% { opacity: 1; box-shadow: 0 0 10px #ED6A8F; }
+}
+
+.blink-button {
+  animation: blink 1.5s ease-in-out infinite;
+  position: relative;
+  z-index: 15;
 }
 </style>

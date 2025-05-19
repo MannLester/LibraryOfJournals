@@ -31,9 +31,10 @@ import bgImage from './assets/bgImage.jpg'
   margin-left: calc(-50vw + 50%);
   margin-right: calc(-50vw + 50%);
   padding: 0;
+  padding-top: 70px; /* Add padding equal to header height */
   left: 0;
   right: 0;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .content-wrapper {

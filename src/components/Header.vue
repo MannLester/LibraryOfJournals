@@ -9,19 +9,19 @@
       
       <!-- Center: Navigation with icons -->
       <nav class="navigation">
-        <a href="#features" class="nav-link">
+        <a @click="scrollToSection('features')" class="nav-link">
           <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
           Features
         </a>
-        <a href="#testimonials" class="nav-link">
+        <a @click="scrollToSection('testimonials')" class="nav-link">
           <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           Testimonials
         </a>
-        <a href="#contacts" class="nav-link last">
+        <a @click="scrollToSection('contacts')" class="nav-link last">
           <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -40,17 +40,16 @@
 
 <style scoped>
 header {
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
-  margin-right: calc(-50vw + 50%);
+  width: 100%;
   background-color: #FFFFFF;
   padding: 0;
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 1000;
-  border-bottom: 1px solid #f5f5f5;
   left: 0;
   right: 0;
+  z-index: 1000;
+  border-bottom: 1px solid #f5f5f5;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
 }
 
 .header-content {
@@ -96,6 +95,7 @@ header {
   font-size: 1rem;
   margin-right: 46px;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .nav-link.last {
@@ -140,7 +140,29 @@ header {
 </style>
 
 <script setup lang="ts">
-// Component logic can be added here if needed
+// Scroll to section function with smooth behavior and header offset
+function scrollToSection(sectionId: string) {
+  // Prevent default navigation behavior
+  event?.preventDefault();
+  
+  // Find the target section
+  const targetSection = document.getElementById(sectionId);
+  
+  if (targetSection) {
+    // Get the height of the header for offset
+    const header = document.querySelector('header');
+    const headerHeight = header ? header.offsetHeight : 0;
+    
+    // Calculate the target position with offset
+    const targetPosition = targetSection.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+    
+    // Use smooth scrolling
+    window.scrollTo({
+      top: targetPosition,
+      behavior: 'smooth'
+    });
+  }
+}
 </script>
 
 <style scoped>
