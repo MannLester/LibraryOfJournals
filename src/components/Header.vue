@@ -2,10 +2,12 @@
   <header>
     <div class="header-content">
       <!-- Left: Logo and Brand Name -->
+      <a @click="scrollToSection('home')" id="home-pointer">
       <div class="logo-container">
         <img src="../assets/LoJ_logo.png" alt="Library of Journals Logo" class="logo">
         <span class="brand-name">Library of Journals</span>
       </div>
+      </a>
       
       <!-- Center: Navigation with icons -->
       <nav class="navigation">
@@ -95,6 +97,10 @@ header {
   font-size: 1rem;
   margin-right: 46px;
   text-decoration: none;
+  cursor: pointer;
+}
+
+#home-pointer{
   cursor: pointer;
 }
 

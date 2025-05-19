@@ -5,7 +5,7 @@
     <!-- Header will be imported in App.vue -->
     
     <!-- Hero Section -->
-    <section class="pt-12 pb-6 text-center">
+    <section id="home" class="pt-12 pb-6 text-center">
       <h1 class="text-8xl font-cormorant font-semibold text-signup-pink mb-3">Library of Journals</h1>
       <p class="text-gray-600 text-4xl font-caveat italic">Where your thoughts find their home...</p>
     </section>
