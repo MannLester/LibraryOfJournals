@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue';
 import Header from './components/Header.vue'
 import LandingPage from './views/LandingPage.vue'
 import bgImage from './assets/bgImage.jpg'
+import useAuth from './composables/useAuth';
+
+// Initialize authentication
+const { isAuthenticated, isLoading, user, account } = useAuth();
 </script>
 
 <template>
