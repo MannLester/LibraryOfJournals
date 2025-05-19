@@ -32,9 +32,16 @@
       </nav>
       
       <!-- Right: Auth Buttons -->
-      <div class="auth-buttons">
-        <button class="login-btn">Log In</button>
-        <button class="signup-btn">Sign up</button>
+      <div class="auth-buttons" v-if="!currentUser">
+        <button class="login-btn" @click="handleGoogleAuth">Log In with Google</button>
+        <button class="signup-btn" @click="handleGoogleAuth">Sign up</button>
+      </div>
+      <div class="auth-buttons" v-else>
+        <div class="user-profile">
+          <img v-if="currentUser.photoURL" :src="currentUser.photoURL" class="user-avatar" alt="Profile" />
+          <span class="user-name">{{ currentUser.displayName || 'User' }}</span>
+          <button class="logout-btn" @click="handleLogout">Logout</button>
+        </div>
       </div>
     </div>
   </header>
@@ -143,9 +150,85 @@ header {
   border: none;
   cursor: pointer;
 }
+
+.logout-btn {
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.95rem;
+  padding: 6px 18px;
+  border-radius: 4px;
+  background-color: #f0f0f0;
+  color: #333;
+  border: none;
+  margin-left: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.logout-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 8px;
+}
+
+.user-name {
+  font-family: 'Roboto', sans-serif;
+  font-size: 0.95rem;
+  color: #333;
+}
 </style>
 
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue';
+import { User } from 'firebase/auth';
+import { signInWithGoogle, logOut, onAuthStateChange } from '../services/firebase/auth';
+
+// User authentication state
+const currentUser = ref<User | null>(null);
+let unsubscribeAuth: () => void;
+
+// Setup auth state listener when component mounts
+onMounted(() => {
+  unsubscribeAuth = onAuthStateChange((user) => {
+    currentUser.value = user;
+  });
+});
+
+// Clean up auth listener when component unmounts
+onUnmounted(() => {
+  if (unsubscribeAuth) {
+    unsubscribeAuth();
+  }
+});
+
+// Handle Google authentication
+async function handleGoogleAuth() {
+  try {
+    await signInWithGoogle();
+  } catch (error) {
+    console.error('Authentication failed:', error);
+  }
+}
+
+// Handle logout
+async function handleLogout() {
+  try {
+    await logOut();
+  } catch (error) {
+    console.error('Logout failed:', error);
+  }
+}
+
 // Scroll to section function with smooth behavior and header offset
 function scrollToSection(sectionId: string) {
   // Prevent default navigation behavior
