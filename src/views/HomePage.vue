@@ -151,6 +151,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import useAuth from '../composables/useAuth';
+import bgImage from '../assets/home_page_design.png';
 
 // Get authentication state
 const { user, account, isAuthenticated } = useAuth();
@@ -183,6 +184,28 @@ onMounted(() => {
 .bg-paper {
   background-color: #fcfaf7;
   position: relative;
+  isolation: isolate;
+}
+
+.bg-paper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('../assets/home_page_design.png');
+  background-repeat: repeat;
+  background-size: auto;
+  background-position: center;
+  opacity: 0.2;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.container {
+  position: relative;
+  z-index: 6; /* Place content above the background with higher z-index */
 }
 
 /* Decorative elements */
