@@ -95,7 +95,7 @@
             </button>
           </div>
           
-          <!-- Writing Prompt Box -->
+          <!-- Writer's Block Helper Box -->
           <div class="prompt-box">
             <div class="prompt-header">
               <span class="prompt-icon">
@@ -111,12 +111,17 @@
                   <path d="M17.66 6.34L19.07 4.93" stroke="#E9184C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </span>
-              <h3>Writing Prompt</h3>
+              <h3>Writer's Block Helper</h3>
             </div>
             <p class="prompt-text">What's something you've been avoiding thinking about?</p>
             <div class="prompt-actions">
               <div class="try-another">Try Another</div>
-              <button class="action-button prompt-btn">Write from Prompt</button>
+              <button class="action-button prompt-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 6px;">
+                  <path d="M9.66347 17H14.3364M11.9999 3V4M18.3639 5.63604L17.6568 6.34315M21 11.9999H20M4 11.9999H3M6.34309 6.34315L5.63599 5.63604M8.46441 15.5356C6.51179 13.5829 6.51179 10.4171 8.46441 8.46449C10.417 6.51187 13.5829 6.51187 15.5355 8.46449C17.4881 10.4171 17.4881 13.5829 15.5355 15.5356L14.9884 16.0827C14.3555 16.7155 13.9999 17.5739 13.9999 18.469V19C13.9999 20.1046 13.1045 21 11.9999 21C10.8954 21 9.99995 20.1046 9.99995 19V18.469C9.99995 17.5739 9.64438 16.7155 9.01151 16.0827L8.46441 15.5356Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Write Tips
+              </button>
             </div>
           </div>
         </div>
@@ -422,7 +427,7 @@ onMounted(() => {
   background-color: #f5f5f5;
 }
 
-/* Prompt box styling */
+/* Writer's Block Helper styling */
 .prompt-box {
   background-color: #FEF0F2;
   border-radius: 0.5rem;
@@ -456,7 +461,8 @@ onMounted(() => {
   color: #555;
   margin-bottom: 1.25rem;
   font-style: italic;
-  text-align: right;
+  text-align: left;
+  margin-left: 26px;
 }
 
 .prompt-actions {
@@ -479,6 +485,9 @@ onMounted(() => {
   border: none;
   font-size: 0.85rem;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Journals section */
