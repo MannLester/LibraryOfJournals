@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import Header from './components/Header.vue'
 import LandingPage from './views/LandingPage.vue'
+import HomePage from './views/HomePage.vue'
 import bgImage from './assets/bgImage.jpg'
 import useAuth from './composables/useAuth';
 
@@ -12,9 +13,11 @@ const { isAuthenticated, isLoading, user, account } = useAuth();
 <template>
   <Header />
   <div class="content-area">
-    <!-- Remove the global background image and let background color handle it -->
+    <!-- Background image is now applied via CSS -->
     <div class="content-wrapper">
-      <LandingPage />
+      <!-- Conditionally render HomePage or LandingPage based on authentication -->
+      <HomePage v-if="isAuthenticated" />
+      <LandingPage v-else />
     </div>
   </div>
 </template>
