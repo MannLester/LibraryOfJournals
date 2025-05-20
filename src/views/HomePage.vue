@@ -144,6 +144,231 @@
           </div>
         </div>
       </div>
+      
+      <!-- Two Column Layout for Stats and Community -->
+      <div class="two-column-layout">
+        <div class="left-column">
+          <!-- Your Writing Journey Section -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">Your Writing Journey</h2>
+                <p class="card-subtitle">Insights from your journaling practice</p>
+              </div>
+              <div class="icon-circle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 12L7 2L12 12L17 2L22 12" stroke="#E9184C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M2 12L7 22L12 12L17 22L22 12" stroke="#E9184C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            
+            <!-- Activity Tabs -->
+            <div class="activity-tabs">
+              <button @click="switchTab('activity')" class="tab-button" :class="{ active: activeTab === 'activity' }">Activity</button>
+              <button @click="switchTab('stats')" class="tab-button" :class="{ active: activeTab === 'stats' }">Stats</button>
+            </div>
+            
+            <!-- Activity View -->
+            <div class="activity-view" v-show="activeTab === 'activity'">
+              <!-- This Week's Writing -->
+              <div class="stats-section">
+                <h3 class="stats-title">This Week's Writing</h3>
+                <div class="week-chart">
+                  <div class="chart-day">
+                    <div class="chart-bar" style="height: 50px;"></div>
+                    <div class="day-label">Mon</div>
+                    <div class="day-value">2</div>
+                  </div>
+                  <div class="chart-day">
+                    <div class="chart-bar" style="height: 30px;"></div>
+                    <div class="day-label">Tue</div>
+                    <div class="day-value">1</div>
+                  </div>
+                  <div class="chart-day">
+                    <div class="chart-bar" style="height: 70px;"></div>
+                    <div class="day-label">Wed</div>
+                    <div class="day-value">3</div>
+                  </div>
+                  <div class="chart-day">
+                    <div class="chart-bar" style="height: 10px;"></div>
+                    <div class="day-label">Thu</div>
+                    <div class="day-value">0</div>
+                  </div>
+                  <div class="chart-day">
+                    <div class="chart-bar" style="height: 50px;"></div>
+                    <div class="day-label">Fri</div>
+                    <div class="day-value">2</div>
+                  </div>
+                  <div class="chart-day">
+                    <div class="chart-bar" style="height: 90px;"></div>
+                    <div class="day-label">Sat</div>
+                    <div class="day-value">4</div>
+                  </div>
+                  <div class="chart-day">
+                    <div class="chart-bar" style="height: 30px;"></div>
+                    <div class="day-label">Sun</div>
+                    <div class="day-value">1</div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Monthly Overview -->
+              <div class="stats-section">
+                <h3 class="stats-title">Monthly Overview</h3>
+                <div class="month-chart">
+                  <div class="month-block">
+                    <div class="month-bar" style="height: 70px;"></div>
+                    <div class="month-label">Week 1</div>
+                    <div class="month-value">8</div>
+                  </div>
+                  <div class="month-block">
+                    <div class="month-bar" style="height: 120px;"></div>
+                    <div class="month-label">Week 2</div>
+                    <div class="month-value">12</div>
+                  </div>
+                  <div class="month-block">
+                    <div class="month-bar" style="height: 50px;"></div>
+                    <div class="month-label">Week 3</div>
+                    <div class="month-value">5</div>
+                  </div>
+                  <div class="month-block">
+                    <div class="month-bar" style="height: 100px;"></div>
+                    <div class="month-label">Week 4</div>
+                    <div class="month-value">10</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Stats View -->
+            <div class="stats-view" v-show="activeTab === 'stats'">
+              <div class="stats-grid">
+                <!-- Total Entries -->
+                <div class="stat-item">
+                  <div class="stat-label">Total Entries</div>
+                  <div class="stat-value">87</div>
+                </div>
+                
+                <!-- Total Words -->
+                <div class="stat-item">
+                  <div class="stat-label">Total Words</div>
+                  <div class="stat-value">24,356</div>
+                </div>
+                
+                <!-- Avg. Words/Entry -->
+                <div class="stat-item">
+                  <div class="stat-label">Avg. Words/Entry</div>
+                  <div class="stat-value">280</div>
+                </div>
+                
+                <!-- Longest Streak -->
+                <div class="stat-item">
+                  <div class="stat-label">Longest Streak</div>
+                  <div class="stat-value">14 days</div>
+                </div>
+                
+                <!-- Most Active Time -->
+                <div class="stat-item">
+                  <div class="stat-label">Most Active Time</div>
+                  <div class="stat-value">Morning</div>
+                </div>
+                
+                <!-- Common Themes -->
+                <div class="stat-item themes-item">
+                  <div class="stat-label">Common Themes</div>
+                  <div class="themes-container">
+                    <span class="theme-tag">Reflection</span>
+                    <span class="theme-tag">Gratitude</span>
+                    <span class="theme-tag">Ideas</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Quote of the Day -->
+          <div class="quote-card">
+            <div class="quote-content">
+              <div class="quote-marks">&ldquo;</div>
+              <p class="quote-text">The habit of writing thus for my own eye only is good practice. It loosens the ligaments.</p>
+              <div class="quote-author">
+                <span class="author-name">Virginia Woolf</span>
+                <span class="author-book">A Writer's Diary</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="right-column">
+          <!-- Community Spotlight -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">Community Spotlight</h2>
+                <p class="card-subtitle">Discover inspiring journals</p>
+              </div>
+              <div class="icon-circle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 3V5M5.63607 5.63604L7.05029 7.05025M3 12H5M5.63607 18.364L7.05029 16.9497M12 19V21M16.9498 16.9497L18.364 18.364M19 12H21M16.9498 7.05025L18.364 5.63604M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="#E9184C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            
+            <!-- Community Journals -->
+            <div class="community-journals">
+              <!-- Journal 1 -->
+              <div class="community-journal">
+                <h3 class="journal-title">Travel Adventures</h3>
+                <p class="journal-author">by James T.</p>
+                <p class="journal-preview font-caveat">Exploring the hidden gems of Thailand! Asia has been an incredible journey...</p>
+              </div>
+              
+              <!-- Journal 2 -->
+              <div class="community-journal" style="background-color: #e6f7e9;">
+                <h3 class="journal-title">Mindfulness Journey</h3>
+                <p class="journal-author">by Sam K.</p>
+                <p class="journal-preview font-caveat">My meditation practice has evolved significantly over the past two weeks...</p>
+              </div>
+            </div>
+            
+            <!-- Explore More Button -->
+            <button class="outline-button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+                <path d="M15.5 14H14.71L14.43 13.73C15.63 12.33 16.25 10.42 15.91 8.39C15.44 5.61 13.12 3.39 10.32 3.05C6.09 2.53 2.53 6.09 3.05 10.32C3.39 13.12 5.61 15.44 8.39 15.91C10.42 16.25 12.33 15.63 13.73 14.43L14 14.71V15.5L18.25 19.75C18.66 20.16 19.33 20.16 19.74 19.75C20.15 19.34 20.15 18.67 19.74 18.26L15.5 14ZM9.5 14C7.01 14 5 11.99 5 9.5C5 7.01 7.01 5 9.5 5C11.99 5 14 7.01 14 9.5C14 11.99 11.99 14 9.5 14Z" fill="#555"/>
+              </svg>
+              Explore More Journals
+            </button>
+          </div>
+          
+          <!-- Writing Streak -->
+          <div class="streak-card">
+            <div class="streak-header">
+              <div class="streak-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 10H7V12H9V10Z" fill="#E9184C"/>
+                  <path d="M13 10H11V12H13V10Z" fill="#E9184C"/>
+                  <path d="M17 10H15V12H17V10Z" fill="#E9184C"/>
+                  <path d="M19 3H18V1H16V3H8V1H6V3H5C3.89 3 3.01 3.9 3.01 5L3 19C3 20.1 3.89 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V8H19V19Z" fill="#E9184C"/>
+                </svg>
+              </div>
+              <div>
+                <h2 class="streak-title">Writing Streak</h2>
+                <p class="streak-subtitle">You're on a roll!</p>
+              </div>
+            </div>
+            
+            <div class="streak-value">
+              <div class="streak-number">7</div>
+              <div class="streak-label">days in a row</div>
+            </div>
+            
+            <button class="outline-button">
+              Keep the Streak Going
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -152,6 +377,13 @@
 import { ref, onMounted, computed } from 'vue';
 import useAuth from '../composables/useAuth';
 import bgImage from '../assets/home_page_design.png';
+
+// For tab switching in Writing Journey section
+const activeTab = ref('activity');
+
+function switchTab(tab) {
+  activeTab.value = tab;
+}
 
 // Get authentication state
 const { user, account, isAuthenticated } = useAuth();
@@ -515,7 +747,8 @@ onMounted(() => {
 
 /* Journals section */
 .journals-section {
-  margin-top: 3rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
 }
 
 .section-header {
@@ -564,5 +797,412 @@ onMounted(() => {
 .empty-state p {
   color: #555;
   margin-bottom: 1.5rem;
+}
+
+/* Two Column Layout */
+.two-column-layout {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.left-column {
+  flex: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.right-column {
+  flex: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+  margin-bottom: 0.25rem;
+}
+
+.card-subtitle {
+  color: #666;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #FEF0F2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: #E9184C;
+}
+
+/* Activity Tabs */
+.activity-tabs {
+  display: flex;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 1.5rem;
+  padding-left: 0.5rem;
+}
+
+.tab-button {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-button.active {
+  color: #E9184C;
+  border-bottom: 2px solid #E9184C;
+  font-weight: 600;
+}
+
+/* Stats Section */
+.stats-section {
+  margin-bottom: 1.5rem;
+  text-align: left;
+  padding-left: 0.5rem;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  padding: 0.5rem;
+}
+
+.stat-item {
+  background-color: #f9f9f9;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  text-align: left;
+}
+
+.themes-item {
+  grid-column: span 2;
+}
+
+.themes-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  text-align: left;
+}
+
+.theme-tag {
+  background-color: #FEF0F2;
+  color: #E9184C;
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.85rem;
+}
+
+.stats-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+  text-align: left;
+  display: block;
+}
+
+/* Week Chart */
+.week-chart {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-end;
+  height: 130px;
+  margin: 0;
+  gap: 1rem;
+  padding-right: 2rem;
+}
+
+.chart-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.chart-bar {
+  width: 40px;
+  background-color: #E9184C;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.day-label {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.day-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Month Chart */
+.month-chart {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-end;
+  height: 160px;
+  margin: 0;
+  gap: 1.5rem;
+  padding-right: 2rem;
+}
+
+.month-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.month-bar {
+  width: 65px;
+  background-color: #E9184C;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.month-label {
+  font-size: 0.8rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.month-value {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Quote Card */
+.quote-card {
+  background-color: #FEF0F2;
+  border-radius: 1rem;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+  opacity:0.6;
+  z-index: 2; /* Maintaining proper z-index hierarchy */
+}
+
+.quote-content {
+  position: relative;
+  padding: 1rem;
+  opacity:1;
+}
+
+.quote-marks {
+  font-family: 'Playfair Display', serif;
+  font-size: 4rem;
+  color: #E9184C;
+  opacity: 1;
+  position: absolute;
+  top: -25px;
+  left: -15px;
+}
+
+.quote-text {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: black;
+  margin-bottom: 1.5rem;
+  max-width: 85%;
+  position: relative;
+  opacity:1;
+  z-index: 3; /* Ensuring text is above decorative elements */
+}
+
+.quote-author {
+  text-align: right;
+  margin-top: 1rem;
+  opacity:1;
+  color:black;
+}
+
+.author-name {
+  display: block;
+  font-weight: 600;
+  color: black;
+  opacity:1
+}
+
+.author-book {
+  display: block;
+  font-size: 0.85rem;
+  color: black;
+  font-style: italic;
+  opacity:1;
+}
+
+/* Community Journals */
+.community-journals {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.community-journal {
+  background-color: #f5f5f5;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.journal-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  margin-bottom: 0.25rem;
+  color: #333;
+}
+
+.journal-author {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0;
+  margin-bottom: 0.5rem;
+}
+
+.journal-preview {
+  font-size: 1rem;
+  margin: 0;
+  color: #333;
+}
+
+.font-caveat {
+  font-family: 'Caveat', cursive;
+}
+
+/* Outline Button */
+.outline-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  background-color: white;
+  color: #333;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.outline-button:hover {
+  background-color: #f5f5f5;
+}
+
+/* Writing Streak Card */
+.streak-card {
+  background-color: #FEF0F2;
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.streak-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.streak-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.streak-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  margin-bottom: 0.25rem;
+  color: #333;
+}
+
+.streak-subtitle {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0;
+}
+
+.streak-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.streak-number {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #E9184C;
+}
+
+.streak-label {
+  font-size: 0.9rem;
+  color: #666;
 }
 </style>
