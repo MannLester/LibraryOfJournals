@@ -135,8 +135,21 @@
             <p class="text-gray-600 text-center">Set a timer and let your thoughts flow without distraction. Many writers report their most profound insights come during timed sessions.</p>
           </div>
           
-          <!-- Feature 2 - Middle column (just scale on hover) -->
+          <!-- Feature 2 - Middle column (One Life, One Journal) -->
           <div class="relative bg-white pt-10 pb-6 px-8 rounded-lg shadow-sm mt-6 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md feature-card-middle">
+            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+              <div class="w-14 h-14 bg-signup-pink rounded-full flex items-center justify-center shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+            </div>
+            <h3 class="text-2xl font-cormorant font-bold text-center mb-3">One Life, One Journal</h3>
+            <p class="text-gray-600 text-center">Embrace the philosophy of a single continuous journey - your life's story captured in one evolving journal that grows with you.</p>
+          </div>
+          
+          <!-- Feature 3 - Right column (Books & Chapters) -->
+          <div class="relative bg-white pt-10 pb-6 px-8 rounded-lg shadow-sm mt-6 transition-all duration-300 ease-in-out hover:scale-105 hover:rotate-2 hover:shadow-md feature-card-right">
             <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
               <div class="w-14 h-14 bg-signup-pink rounded-full flex items-center justify-center shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -147,9 +160,12 @@
             <h3 class="text-2xl font-cormorant font-bold text-center mb-3">Books & Chapters</h3>
             <p class="text-gray-600 text-center">Organize your writing into beautiful books with chapters, creating a library that tells the story of your life's journey.</p>
           </div>
-          
-          <!-- Feature 3 - Right column (tilt right on hover) -->
-          <div class="relative bg-white pt-10 pb-6 px-8 rounded-lg shadow-sm mt-6 transition-all duration-300 ease-in-out hover:scale-105 hover:rotate-2 hover:shadow-md feature-card-right">
+        </div>
+        
+        <!-- Features Grid - Bottom Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <!-- Feature 4 - Left column (Speak Your Truth) -->
+          <div class="relative bg-white pt-10 pb-6 px-8 rounded-lg shadow-sm mt-6 transition-all duration-300 ease-in-out hover:scale-105 hover:-rotate-2 hover:shadow-md feature-card-left">
             <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
               <div class="w-14 h-14 bg-signup-pink rounded-full flex items-center justify-center shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -160,12 +176,9 @@
             <h3 class="text-2xl font-cormorant font-bold text-center mb-3">Speak Your Truth</h3>
             <p class="text-gray-600 text-center">When typing feels limiting, speak your thoughts with our seamless speech-to-text feature that captures your voice.</p>
           </div>
-        </div>
-        
-        <!-- Features Grid - Bottom Row -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <!-- Feature 4 - Left column (tilt left on hover) -->
-          <div class="relative bg-white pt-10 pb-6 px-8 rounded-lg shadow-sm mt-6 transition-all duration-300 ease-in-out hover:scale-105 hover:-rotate-2 hover:shadow-md feature-card-left">
+          
+          <!-- Feature 5 - Middle column (Share Your Perspective) -->
+          <div class="relative bg-white pt-10 pb-6 px-8 rounded-lg shadow-sm mt-6 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md feature-card-middle">
             <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
               <div class="w-14 h-14 bg-signup-pink rounded-full flex items-center justify-center shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -175,19 +188,6 @@
             </div>
             <h3 class="text-2xl font-cormorant font-bold text-center mb-3">Share Your Perspective</h3>
             <p class="text-gray-600 text-center">Choose which journals to keep private and which to share with the world or just a few trusted friends.</p>
-          </div>
-          
-          <!-- Feature 5 - Middle column (just scale on hover) -->
-          <div class="relative bg-white pt-10 pb-6 px-8 rounded-lg shadow-sm mt-6 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-md feature-card-middle">
-            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-              <div class="w-14 h-14 bg-signup-pink rounded-full flex items-center justify-center shadow-md">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-            <h3 class="text-2xl font-cormorant font-bold text-center mb-3">Version History</h3>
-            <p class="text-gray-600 text-center">Your thoughts are preserved through time with automatic version history that ensures nothing is ever lost.</p>
           </div>
           
           <!-- Feature 6 - Right column (tilt right on hover) -->
