@@ -139,7 +139,7 @@
             <p>You don't have any journals yet. Create your first one to get started!</p>
             <button class="primary-button">
               <span class="icon">📖</span>
-              Create New Journal
+              Explore New Journals
             </button>
           </div>
         </div>
