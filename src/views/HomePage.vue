@@ -1031,12 +1031,13 @@ onMounted(() => {
 
 /* Quote Card */
 .quote-card {
-  background-color: #FEF0F2;
-  border-radius: 1rem;
-  padding: 2rem;
+  background: linear-gradient(to bottom right, rgba(255, 0, 0, 0.1), rgba(255, 228, 230, 0.3));
+  border-radius: 0.75rem;
+  padding: 1.5rem;
   position: relative;
   overflow: hidden;
-  opacity:0.6;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* equivalent to shadow-md */
+  border: 1px solid rgba(229, 231, 235, 0.2);
   z-index: 2; /* Maintaining proper z-index hierarchy */
 }
 
@@ -1140,7 +1141,7 @@ onMounted(() => {
   border: 1px solid #ddd;
   border-radius: 0.5rem;
   background-color: white;
-  color: #333;
+  color: black;
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -1152,9 +1153,12 @@ onMounted(() => {
 
 /* Writing Streak Card */
 .streak-card {
-  background-color: #FEF0F2;
-  border-radius: 1rem;
+  background: linear-gradient(to bottom right, rgba(255, 204, 214, 0.6), rgba(255, 240, 220, 0.6));
+  border-radius: 0.75rem; 
   padding: 1.5rem;
+  opacity:0.7;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
 }
 
 .streak-header {
@@ -1179,7 +1183,7 @@ onMounted(() => {
   font-weight: 600;
   margin: 0;
   margin-bottom: 0.25rem;
-  color: #333;
+  color: black;
 }
 
 .streak-subtitle {
