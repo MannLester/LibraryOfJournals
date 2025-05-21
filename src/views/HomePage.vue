@@ -65,7 +65,7 @@
           <div class="card-header">
             <div>
               <h2 class="card-title">Start Something New</h2>
-              <p class="card-subtitle">Begin a new journal or chapter</p>
+              <p class="card-subtitle">Begin your life's journal or a new chapter</p>
             </div>
             <div class="icon-circle">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -127,10 +127,10 @@
         </div>
       </div>
       
-      <!-- Your Journals Section -->
+      <!-- Saved Journals Section -->
       <div class="journals-section">
         <div class="section-header">
-          <h2>Your Journals</h2>
+          <h2>Saved Journals</h2>
           <button class="view-all-btn">View All &rarr;</button>
         </div>
         <!-- Empty Journals State (displayed when no journals exist) -->
