@@ -3,11 +3,23 @@ import { onMounted, ref, watch } from 'vue';
 import Header from './components/Header.vue'
 import LandingPage from './views/LandingPage.vue'
 import HomePage from './views/HomePage.vue'
+import LibraryPage from './views/LibraryPage.vue'
 import bgImage from './assets/bgImage.jpg'
 import useAuth from './composables/useAuth';
 
 // Initialize authentication
 const { isAuthenticated, isLoading, user, account } = useAuth();
+
+// Track current page
+const currentPage = ref('home');
+
+// Listen for navigation events from the Header component
+onMounted(() => {
+  window.addEventListener('showPage', (event: CustomEvent) => {
+    const { page } = event.detail;
+    currentPage.value = page;
+  });
+});
 </script>
 
 <template>
@@ -15,8 +27,12 @@ const { isAuthenticated, isLoading, user, account } = useAuth();
   <div class="content-area">
     <!-- Background image is now applied via CSS -->
     <div class="content-wrapper">
-      <!-- Conditionally render HomePage or LandingPage based on authentication -->
-      <HomePage v-if="isAuthenticated" />
+      <!-- First check authentication, then check which page to show -->
+      <template v-if="isAuthenticated">
+        <HomePage v-if="currentPage === 'home'" />
+        <LibraryPage v-else-if="currentPage === 'library'" />
+      </template>
+      <!-- Show landing page for non-authenticated users -->
       <LandingPage v-else />
     </div>
   </div>
