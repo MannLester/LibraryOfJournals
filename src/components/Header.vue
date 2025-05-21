@@ -231,23 +231,24 @@
 }
 
 .user-avatar-circle {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background-color: #8B4513;
-  color: white;
+  background-color: #f0f0f0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
   font-weight: 500;
   overflow: hidden;
+  border: 1px solid #eee;
 }
 
 .user-avatar-circle img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 50%;
 }
 
 .profile-name {
