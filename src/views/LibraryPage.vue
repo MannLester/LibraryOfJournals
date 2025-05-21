@@ -1,5 +1,5 @@
 <template>
-  <div class="library-page">
+  <div class="min-h-screen bg-paper">
     <div class="max-w-7xl mx-auto px-4 py-8">
       <!-- Header with Title and Search/Filter buttons -->
       <div class="flex justify-between items-center mb-8">
@@ -191,9 +191,31 @@ document.addEventListener('click', handleClickOutside);
 </script>
 
 <style scoped>
-.library-page {
-  min-height: calc(100vh - 60px);
-  background-color: #fafafa;
+
+.min-h-screen {
+  min-height: 100vh;
+}
+
+.bg-paper {
+  background-color: #fcfaf7;
+  position: relative;
+  isolation: isolate;
+}
+
+.bg-paper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('../assets/home_page_design.png');
+  background-repeat: repeat;
+  background-size: auto;
+  background-position: center;
+  opacity: 0.2;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .journal-card {

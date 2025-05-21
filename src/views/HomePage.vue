@@ -387,7 +387,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import useAuth from '../composables/useAuth';
-import bgImage from '../assets/home_page_design.png';
 
 // For tab switching in Writing Journey section
 const activeTab = ref('activity');
