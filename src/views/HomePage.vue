@@ -156,10 +156,15 @@
                 <p class="card-subtitle">Insights from your journaling practice</p>
               </div>
               <div class="icon-circle">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2 12L7 2L12 12L17 2L22 12" stroke="#E9184C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M2 12L7 22L12 12L17 22L22 12" stroke="#E9184C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="24" 
+    height="24" 
+    viewBox="0 0 24 24" 
+    fill="#e11d48"
+  >
+    <path d="M23,6h-6c-0.6,0-1,0.4-1,1s0.4,1,1,1h3.6l-9.1,9.1l-5-5c-0.4-0.4-1-0.4-1.4,0l-5,5c-0.4,0.4-0.4,1,0,1.4 c0.2,0.2,0.5,0.3,0.7,0.3s0.5-0.1,0.7-0.3l4.3-4.3l5,5c0.2,0.2,0.5,0.3,0.7,0.3s0.5-0.1,0.7-0.3l9.8-9.8V10c0,0.6,0.4,1,1,1 s1-0.4,1-1V7C24,6.4,23.6,6,23,6z"/>
+  </svg>
               </div>
             </div>
             
@@ -309,9 +314,15 @@
                 <p class="card-subtitle">Discover inspiring journals</p>
               </div>
               <div class="icon-circle">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 3V5M5.63607 5.63604L7.05029 7.05025M3 12H5M5.63607 18.364L7.05029 16.9497M12 19V21M16.9498 16.9497L18.364 18.364M19 12H21M16.9498 7.05025L18.364 5.63604M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="#E9184C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+                <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="24" 
+    height="24" 
+    viewBox="0 0 24 24" 
+    fill="#e11d48"
+  >
+    <path d="M12,2L9.91,9.09L2,12l7.91,2.91L12,22l2.09-7.09L22,12l-7.91-2.91L12,2z" />
+  </svg>
               </div>
             </div>
             
