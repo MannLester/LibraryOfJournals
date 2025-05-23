@@ -4,6 +4,7 @@ import Header from './components/Header.vue'
 import LandingPage from './views/LandingPage.vue'
 import HomePage from './views/HomePage.vue'
 import LibraryPage from './views/LibraryPage.vue'
+import ExplorePage from './views/ExplorePage.vue'
 import bgImage from './assets/bgImage.jpg'
 import useAuth from './composables/useAuth';
 
@@ -31,6 +32,7 @@ onMounted(() => {
       <template v-if="isAuthenticated">
         <HomePage v-if="currentPage === 'home'" />
         <LibraryPage v-else-if="currentPage === 'library'" />
+        <ExplorePage v-else-if="currentPage === 'explore'" />
       </template>
       <!-- Show landing page for non-authenticated users -->
       <LandingPage v-else />

@@ -357,19 +357,18 @@ const { user, account, isAuthenticated, login, signup, logout } = useAuth();
 const activeNavItem = ref('home'); // Default to home
 
 // Function to set active nav item
-function navigateTo(item, path) {
+const navigateTo = (item: string, path: string) => {
   activeNavItem.value = item;
-  // We'll use a direct approach to show the appropriate view
-  // This simulates routing without requiring the full router setup
-  if (path === '/library') {
-    showLibraryPage();
-  } else if (path === '/') {
-    showHomePage();
+  // Emit an event to notify the parent component about the navigation
+  window.dispatchEvent(new CustomEvent('showPage', { detail: { page: item } }));
+  
+  // Update the URL without reloading the page
+  if (window.history.pushState) {
+    window.history.pushState({}, '', path);
   } else {
-    // For other pages, we can add handlers as they're developed
-    console.log(`Navigation to ${path} not yet implemented`);
+    window.location.href = path;
   }
-}
+};
 
 // These functions would need to be implemented elsewhere in your app
 // to show/hide the appropriate pages
