@@ -50,9 +50,8 @@
             <div class="no-entries">
               <p>You haven't written anything yet.</p>
             </div>
-            
-            <div class="button-container">
-              <button class="primary-button w-full">
+              <div class="button-container">
+              <button class="primary-button w-full" @click="navigateToWrite">
                 <span class="icon">✎</span>
                 Start Writing
               </button>
@@ -393,6 +392,11 @@ const activeTab = ref('activity');
 
 function switchTab(tab) {
   activeTab.value = tab;
+}
+
+function navigateToWrite() {
+  const event = new CustomEvent('showPage', { detail: { page: 'writing' } });
+  window.dispatchEvent(event);
 }
 
 // Get authentication state
