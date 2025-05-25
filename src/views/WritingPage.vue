@@ -1,323 +1,181 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex">
-    <!-- Left Sidebar: Chapter Navigation -->
-    <div class="w-64 border-r border-gray-200 h-screen overflow-y-auto bg-white p-4">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="font-serif text-lg">Chapters</h2>
-        <button @click="addNewChapter" class="text-blue-600 hover:text-blue-700">
-          <span class="text-xl">+</span>
-        </button>
+  <div class="h-screen flex flex-col bg-white">
+    <!-- Header -->
+    <header class="border-b border-gray-200">
+      <div class="flex items-center justify-between px-4 py-2">
+        <div class="flex items-center space-x-2">
+          <span class="text-2xl font-bold text-blue-600">Library of Journals</span>
+          <button @click="isSidebarOpen = !isSidebarOpen" class="p-2 hover:bg-gray-100 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-2">
+            <button @click="decreaseZoom" class="p-1 hover:bg-gray-100 rounded">-</button>
+            <span class="text-sm">{{ Math.round(zoom * 100) }}%</span>
+            <button @click="increaseZoom" class="p-1 hover:bg-gray-100 rounded">+</button>
+          </div>
+          <button @click="saveContent" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+            Save
+          </button>
+        </div>
       </div>
       
-      <!-- Chapter Search -->
-      <div class="mb-4">
-        <input 
-          type="text"
-          v-model="chapterSearch"
-          placeholder="Search chapters..."
-          class="w-full px-3 py-2 border rounded-lg"
-        />
+      <!-- Formatting Toolbar -->
+      <div class="border-t border-gray-200 px-4 py-1 flex items-center space-x-2 overflow-x-auto">
+        <select v-model="settings.fontFamily" class="text-sm border rounded px-2 py-1">
+          <option value="sans">Arial</option>
+          <option value="serif">Times New Roman</option>
+          <option value="mono">Courier New</option>
+        </select>
+        
+        <select v-model="settings.fontSize" class="text-sm border rounded px-2 py-1 w-16">
+          <option v-for="size in [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72]" :value="size">
+            {{ size }}
+          </option>
+        </select>
+        
+        <div class="h-6 w-px bg-gray-300 mx-1"></div>
+        
+        <button @click="toggleBold" :class="{'bg-gray-200': settings.isBold}" class="p-1 rounded hover:bg-gray-100">
+          <span class="font-bold">B</span>
+        </button>
+        <button @click="toggleItalic" :class="{'bg-gray-200': settings.isItalic}" class="p-1 rounded hover:bg-gray-100">
+          <em>I</em>
+        </button>
+        <button @click="toggleUnderline" :class="{'bg-gray-200': settings.isUnderline}" class="p-1 rounded hover:bg-gray-100">
+          <u>U</u>
+        </button>
+        
+        <div class="h-6 w-px bg-gray-300 mx-1"></div>
+        
+        <button @click="changeAlignment('left')" :class="{'bg-gray-200': settings.textAlign === 'left'}" class="p-1 rounded hover:bg-gray-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+          </svg>
+        </button>
+        <button @click="changeAlignment('center')" :class="{'bg-gray-200': settings.textAlign === 'center'}" class="p-1 rounded hover:bg-gray-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4 5a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zm2 5a1 1 0 100 2h8a1 1 0 100-2H6zm-1 5a1 1 0 011-1h10a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" />
+          </svg>
+        </button>
+        <button @click="changeAlignment('right')" :class="{'bg-gray-200': settings.textAlign === 'right'}" class="p-1 rounded hover:bg-gray-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm4 5a1 1 0 100 2h8a1 1 0 100-2H7zm-4 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+          </svg>
+        </button>
+        
+        <div class="h-6 w-px bg-gray-300 mx-1"></div>
+        
+        <input type="color" v-model="settings.textColor" class="w-6 h-6 p-0 border-0 rounded overflow-hidden cursor-pointer" title="Text color">
+        <button class="p-1 rounded hover:bg-gray-100">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M4 3a1 1 0 011-1h10a1 1 0 011 1v5a1 1 0 11-2 0V6.414l-4.293 4.293a1 1 0 01-1.414 0L6 6.414V8a1 1 0 11-2 0V3z" clip-rule="evenodd" />
+            <path fill-rule="evenodd" d="M4 13a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1z" clip-rule="evenodd" />
+          </svg>
+        </button>
       </div>
-
-      <!-- Chapter List -->
-      <div class="space-y-2">
-        <div 
-          v-for="chapter in filteredChapters" 
-          :key="chapter.id"
-          @click="selectChapter(chapter)"
-          class="p-2 hover:bg-gray-100 rounded cursor-pointer"
-          :class="{'bg-blue-50': currentChapter?.id === chapter.id}"
-        >
-          {{ chapter.title }}
-        </div>
-      </div>
-    </div>
-
-    <!-- Main Content Area -->
-    <div class="flex-1">      <!-- Top Navigation Bar -->
-      <div class="sticky top-0 z-40 bg-white border-b border-gray-200 p-4">
-        <div class="flex justify-between items-center max-w-7xl mx-auto">
-          <!-- Left: Page Layout Controls -->
-          <div class="flex space-x-4">
-            <button 
-              @click="layout = 'single'"
-              :class="{'text-blue-600': layout === 'single'}"
-              class="px-4 py-2 rounded-lg hover:bg-gray-100"
-            >
-              Single Page
-            </button>
-            <button 
-              @click="layout = 'double'"
-              :class="{'text-blue-600': layout === 'double'}"
-              class="px-4 py-2 rounded-lg hover:bg-gray-100"
-            >
-              Double Page
+    </header>
+    
+    <div class="flex flex-1 overflow-hidden">
+      <!-- Sidebar -->
+      <aside :class="{'w-64': isSidebarOpen, 'w-0': !isSidebarOpen}" class="h-full bg-white border-r border-gray-200 transition-all duration-200 overflow-hidden">
+        <div class="p-4">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-medium">Document</h2>
+            <button @click="addNewChapter" class="text-blue-600 hover:text-blue-800">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+              </svg>
             </button>
           </div>
-
-          <!-- Right: Zoom and Mode Controls -->
-          <div class="flex items-center space-x-4">
-            <div class="flex items-center space-x-2">
-              <button @click="decreaseZoom" class="p-2 hover:bg-gray-100 rounded">
-                <span class="text-xl">-</span>
-              </button>
-              <span>{{ Math.round(zoom * 100) }}%</span>
-              <button @click="increaseZoom" class="p-2 hover:bg-gray-100 rounded">
-                <span class="text-xl">+</span>
-              </button>
-            </div>
-            
-            <div class="border-l border-gray-200 pl-4 flex space-x-2">
-              <button 
-                :class="{'bg-blue-100': mode === 'write'}"
-                class="px-4 py-2 rounded-lg hover:bg-gray-100"
-                @click="mode = 'write'"
-              >
-                Write Mode
-              </button>
-              <button 
-                :class="{'bg-blue-100': mode === 'present'}"
-                class="px-4 py-2 rounded-lg hover:bg-gray-100"
-                @click="mode = 'present'"
-              >
-                Present Mode
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>      <!-- Writing Tools Bar -->      
-      <div class="sticky top-16 z-30 bg-white border-b border-gray-200 p-2">
-        <div class="flex flex-wrap items-center gap-2 max-w-7xl mx-auto">
-          <!-- Font Controls Group -->
-          <div class="flex items-center gap-2 min-w-[200px]">
-          <select v-model="settings.fontFamily" class="border rounded px-2 py-1">
-            <option value="serif">Serif</option>
-            <option value="sans">Sans</option>
-            <option value="mono">Mono</option>
-          </select>
-
+          
           <input 
-            type="number" 
-            v-model="settings.fontSize" 
-            min="12" 
-            max="24" 
-            class="w-16 border rounded px-2 py-1"
-          />          <!-- Text Formatting -->
-          <div class="flex items-center gap-2 border-l border-gray-200 pl-4 flex-wrap">
-            <button 
-              @click="toggleBold"
-              :class="{'bg-blue-100': settings.isBold}"
-              class="px-2 py-1 rounded-lg hover:bg-gray-100 font-bold"
-              title="Bold"
-            >
-              B
-            </button>
-            <button 
-              @click="toggleItalic"
-              :class="{'bg-blue-100': settings.isItalic}"
-              class="px-2 py-1 rounded-lg hover:bg-gray-100 italic"
-              title="Italic"
-            >
-              I
-            </button>
-            <button 
-              @click="toggleUnderline"
-              :class="{'bg-blue-100': settings.isUnderline}"
-              class="px-2 py-1 rounded-lg hover:bg-gray-100 underline"
-              title="Underline"
-            >
-              U
-            </button>
-          </div>          <!-- Color Controls -->
-          <div class="flex items-center gap-2 border-l border-gray-200 pl-4 shrink-0">
-            <input 
-              type="color" 
-              v-model="settings.pageColor" 
-              class="w-8 h-8 rounded cursor-pointer"
-              title="Page Color"
-            />
-            <input 
-              type="color" 
-              v-model="settings.textColor" 
-              class="w-8 h-8 rounded cursor-pointer"
-              title="Text Color"
-            />
-          </div>          <!-- Text Alignment -->
-          <div class="flex flex-wrap gap-2">
-            <button 
-              @click="changeAlignment('left')"
-              :class="{'bg-blue-100': settings.textAlign === 'left'}"
-              class="px-4 py-2 rounded-lg hover:bg-gray-100"
-            >
-              Left
-            </button>
-            <button 
-              @click="changeAlignment('center')"
-              :class="{'bg-blue-100': settings.textAlign === 'center'}"
-              class="px-4 py-2 rounded-lg hover:bg-gray-100"
-            >
-              Center
-            </button>
-            <button 
-              @click="changeAlignment('right')"
-              :class="{'bg-blue-100': settings.textAlign === 'right'}"
-              class="px-4 py-2 rounded-lg hover:bg-gray-100"
-            >
-              Right
-            </button>
-            <button 
-              @click="changeAlignment('justify')"
-              :class="{'bg-blue-100': settings.textAlign === 'justify'}"
-              class="px-4 py-2 rounded-lg hover:bg-gray-100"
-            >
-              Justify
-            </button>
-          </div>          <!-- Line Spacing -->
-          <div class="flex items-center gap-2 flex-wrap">
-            <span>Line Spacing:</span>
-            <button 
-              @click="changeLineSpacing(1)"
-              :class="{'bg-blue-100': settings.lineSpacing === 1}"
-              class="px-2 py-1 rounded-lg hover:bg-gray-100"
-            >
-              1
-            </button>
-            <button 
-              @click="changeLineSpacing(1.15)"
-              :class="{'bg-blue-100': settings.lineSpacing === 1.15}"
-              class="px-2 py-1 rounded-lg hover:bg-gray-100"
-            >
-              1.15
-            </button>
-            <button 
-              @click="changeLineSpacing(1.5)"
-              :class="{'bg-blue-100': settings.lineSpacing === 1.5}"
-              class="px-2 py-1 rounded-lg hover:bg-gray-100"
-            >
-              1.5
-            </button>
-            <button 
-              @click="changeLineSpacing(2)"
-              :class="{'bg-blue-100': settings.lineSpacing === 2}"
-              class="px-2 py-1 rounded-lg hover:bg-gray-100"
-            >
-              2
-            </button>
-          </div>
-
-          <!-- Indentation Controls -->
-          <div class="flex items-center space-x-2">
-            <button 
-              @click="adjustIndent('increase')"
-              class="px-2 py-1 rounded-lg hover:bg-gray-100"
-              title="Increase Indent"
-            >
-              <span class="text-xl">▶️</span>
-            </button>
-            <button 
-              @click="adjustIndent('decrease')"
-              class="px-2 py-1 rounded-lg hover:bg-gray-100"
-              title="Decrease Indent"
-            >
-              <span class="text-xl">◀️</span>
-            </button>
-          </div>
-
-          <!-- List Controls -->
-          <div class="flex items-center space-x-2">
-            <button 
-              @click="insertList('bullet')"
-              class="px-2 py-1 rounded-lg hover:bg-gray-100"
-              title="Insert Bullet List"
-            >
-              •
-            </button>
-            <button 
-              @click="insertList('number')"
-              class="px-2 py-1 rounded-lg hover:bg-gray-100"
-              title="Insert Numbered List"
-            >
-              1.
-            </button>
-          </div>          <!-- Image Upload -->
-          <button 
-            @click="triggerImageUpload" 
-            class="p-2 hover:bg-gray-100 rounded"
-            title="Insert Image"
+            type="text" 
+            v-model="chapterSearch" 
+            placeholder="Search in document" 
+            class="w-full px-3 py-2 border rounded-lg text-sm mb-4"
           >
-            <span class="text-xl">📷</span>
-          </button>
-          <input 
-            type="file" 
-            ref="imageInput" 
-            @change="handleImageUpload" 
-            accept="image/*" 
-            class="hidden"
-          />
+          
+          <div class="space-y-1">
+            <div 
+              v-for="chapter in filteredChapters" 
+              :key="chapter.id"
+              @click="selectChapter(chapter)"
+              class="px-3 py-2 text-sm rounded hover:bg-gray-100 cursor-pointer"
+              :class="{'bg-blue-50 text-blue-700': currentChapter?.id === chapter.id}"
+            >
+              {{ chapter.title }}
+            </div>
+          </div>
         </div>
-      </div>
-
-      <!-- Main Writing Area -->
-      <div class="max-w-7xl mx-auto p-8">
-        <div 
-          :class="{
-            'grid grid-cols-2 gap-8': layout === 'double',
-            'max-w-3xl mx-auto': layout === 'single'
-          }"
-          :style="{
-            transform: `scale(${zoom})`,
-            transformOrigin: 'top center'
-          }"
-        >
-          <!-- Page(s) -->
-          <div 
-            class="bg-white rounded-lg shadow-lg p-8 min-h-[842px] w-full"
-            :class="{'aspect-[1/1.414]': true}"
-          >
+      </aside>
+      
+      <!-- Main Content -->
+      <main class="flex-1 flex flex-col overflow-hidden bg-gray-50">
+        <div class="flex-1 overflow-auto p-8">
+          <div class="relative mx-auto bg-white shadow-lg rounded-sm" :style="{
+            width: `${8.5 * zoom}in`,
+            minHeight: `${11 * zoom}in`,
+            padding: `${1 * zoom}in`,
+            boxSizing: 'border-box',
+            margin: '0 auto',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+          }">
             <textarea
               v-model="content"
-              class="w-full h-full resize-none border-none focus:ring-0 font-serif text-lg"
-              placeholder="Start writing your story..."
-            ></textarea>
-          </div>
-
-          <!-- Second page (only shows in double layout) -->
-          <div 
-            v-if="layout === 'double'"
-            class="bg-white rounded-lg shadow-lg p-8 min-h-[842px] w-full aspect-[1/1.414]"
-          >
-            <textarea
-              v-model="contentRight"
-              class="w-full h-full resize-none border-none focus:ring-0 font-serif text-lg"
-              placeholder="Continue your story..."
+              class="w-full h-full p-8 outline-none resize-none bg-white"
+              :style="{
+                fontSize: `${settings.fontSize}px`,
+                fontFamily: settings.fontFamily === 'sans' ? 'Arial, sans-serif' : settings.fontFamily === 'serif' ? 'Times New Roman, serif' : 'Courier New, monospace',
+                color: settings.textColor,
+                textAlign: settings.textAlign,
+                lineHeight: '1.5',
+                fontWeight: settings.isBold ? 'bold' : 'normal',
+                fontStyle: settings.isItalic ? 'italic' : 'normal',
+                textDecoration: settings.isUnderline ? 'underline' : 'none',
+                direction: 'ltr',
+                minHeight: '100%',
+                boxSizing: 'border-box',
+                border: 'none',
+                backgroundImage: 'none',
+                overflow: 'hidden',
+                fontVariantLigatures: 'none',
+                lineBreak: 'normal',
+                whiteSpace: 'pre-wrap',
+                wordWrap: 'break-word',
+                WebkitFontSmoothing: 'antialiased',
+                MozOsxFontSmoothing: 'grayscale',
+                WebkitTextFillColor: settings.textColor
+              }"
+              placeholder="Start typing here..."
+              @input="handleTextInput"
+              @keydown.delete="handleDelete"
+              ref="editor"
             ></textarea>
           </div>
         </div>
-      </div>      <!-- Floating Action Buttons -->
-      <div class="fixed right-8 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 z-50">
-        <button 
-          @click="saveContent"
-          class="w-12 h-12 rounded-full bg-pink-500 hover:bg-pink-600 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110"
-          title="Save"
-        >
-          <span class="text-xl">💾</span>
-        </button>
-        <button 
-          @click="toggleVoiceInput"
-          class="w-12 h-12 rounded-full bg-white hover:bg-gray-50 border border-gray-200 flex items-center justify-center shadow-lg transition-transform hover:scale-110"
-          :class="{'bg-red-100': isRecording}"
-          title="Voice Input"
-        >
-          <span class="text-xl">🎤</span>
+      </main>
+    </div>
+    
+    <!-- Status Bar -->
+    <footer class="border-t border-gray-200 px-4 py-1 text-xs text-gray-500 flex justify-between items-center">
+      <div>Words: {{ wordCount }}</div>
+      <div>
+        <button @click="toggleVoiceInput" class="p-1 rounded-full hover:bg-gray-100" :class="{'text-red-500': isRecording}">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
+          </svg>
         </button>
       </div>
-    </div>
-  </div>
+    </footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 interface Chapter {
   id: string
@@ -341,11 +199,11 @@ interface WritingSettings {
 }
 
 // State
-const layout = ref('single')
 const zoom = ref(1)
 const mode = ref('write')
-const content = ref('')
-const contentRight = ref('')
+const content = ref('') // This holds the text content of the editor
+const isSidebarOpen = ref(true)
+const isScrolled = ref(false)
 
 // Computed values for numeric properties
 const lineHeightValue = computed(() => `${settings.value.lineSpacing * 1.75}rem`)
@@ -383,7 +241,23 @@ const recognition = ref<any>(null)
 // Image Upload
 const imageInput = ref<HTMLInputElement | null>(null)
 
+// Computed
+const wordCount = computed(() => {
+  return content.value.trim() ? content.value.trim().split(/\s+/).length : 0
+})
+
+// Refs
+const editor = ref<HTMLTextAreaElement | null>(null)
+
 // Methods
+const handleTextInput = (e: Event) => {
+  // This will be handled by v-model
+}
+
+const handleDelete = (e: KeyboardEvent) => {
+  // Let the default delete behavior happen
+}
+
 const addNewChapter = () => {
   const newChapter: Chapter = {
     id: Date.now().toString(),
@@ -398,6 +272,17 @@ const addNewChapter = () => {
 const selectChapter = (chapter: Chapter) => {
   currentChapter.value = chapter
   content.value = chapter.content
+}
+
+const saveContent = () => {
+  if (currentChapter.value) {
+    currentChapter.value.content = content.value
+    currentChapter.value.lastModified = new Date()
+    console.log('Content saved:', currentChapter.value)
+    // Here you would typically make an API call to save the content
+  } else {
+    console.log('No chapter selected')
+  }
 }
 
 const toggleVoiceInput = () => {
@@ -484,7 +369,22 @@ const insertList = (type: 'bullet' | 'number') => {
 }
 </script>
 
-<style scoped>
+<style>
+* {
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
 textarea {
   background: linear-gradient(to bottom, transparent 0%, transparent 97%, #e5e7eb 97%, #e5e7eb 100%);
   background-size: 100% 1.75rem;
