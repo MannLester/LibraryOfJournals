@@ -25,6 +25,24 @@
       
       <!-- Formatting Toolbar -->
       <div class="border-t border-gray-200 px-4 py-1 flex items-center space-x-2 overflow-x-auto">
+        <div class="relative group">
+          <select v-model="currentStyle" @change="applyStyle" class="text-sm border rounded px-2 py-1 pr-6 appearance-none bg-white">
+            <option value="normal">Normal text</option>
+            <option value="heading1">Heading 1</option>
+            <option value="heading2">Heading 2</option>
+            <option value="heading3">Heading 3</option>
+            <option value="title">Title</option>
+            <option value="subtitle">Subtitle</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+            </svg>
+          </div>
+        </div>
+        
+        <div class="h-6 w-px bg-gray-300 mx-1"></div>
+        
         <select v-model="settings.fontFamily" class="text-sm border rounded px-2 py-1">
           <option value="sans">Arial</option>
           <option value="serif">Times New Roman</option>
@@ -84,7 +102,7 @@
       <aside :class="{'w-64': isSidebarOpen, 'w-0': !isSidebarOpen}" class="h-full bg-white border-r border-gray-200 transition-all duration-200 overflow-hidden">
         <div class="p-4">
           <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-medium">Document</h2>
+            <h2 class="text-lg font-medium">Chapters</h2>
             <button @click="addNewChapter" class="text-blue-600 hover:text-blue-800">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
@@ -202,6 +220,7 @@ interface WritingSettings {
 const zoom = ref(1)
 const mode = ref('write')
 const content = ref('') // This holds the text content of the editor
+const currentStyle = ref('normal') // Current text style
 const isSidebarOpen = ref(true)
 const isScrolled = ref(false)
 
@@ -353,6 +372,20 @@ const changeAlignment = (align: 'left' | 'center' | 'right' | 'justify') => {
 
 const changeLineSpacing = (spacing: 1 | 1.15 | 1.5 | 2) => {
   settings.value.lineSpacing = spacing
+}
+
+const applyStyle = () => {
+  const styleMap = {
+    'normal': { fontSize: 12, isBold: false, isItalic: false },
+    'heading1': { fontSize: 26, isBold: true, isItalic: false },
+    'heading2': { fontSize: 20, isBold: true, isItalic: false },
+    'heading3': { fontSize: 16, isBold: true, isItalic: true },
+    'title': { fontSize: 24, isBold: true, isItalic: false },
+    'subtitle': { fontSize: 14, isBold: false, isItalic: true }
+  }
+  
+  const style = styleMap[currentStyle.value] || styleMap.normal
+  Object.assign(settings.value, style)
 }
 
 const adjustIndent = (direction: 'increase' | 'decrease') => {
