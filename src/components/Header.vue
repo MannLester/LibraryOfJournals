@@ -94,7 +94,6 @@
 <style scoped>
 .header-container {
   width: 100%;
-  padding: 0;
   position: fixed;
   top: 0;
   left: 0;
@@ -103,6 +102,9 @@
   background-color: #FFFFFF;
   border-bottom: 1px solid #f0f0f0;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 /* Logged-in header style - lighter background to match the image */
@@ -115,16 +117,17 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
-  margin: 0 auto;
+  margin: 0;
   width: 100%;
-  max-width: 1200px;
+  padding: 0.75rem 1rem;
+  box-sizing: border-box;
 }
 
 .logo-container {
   display: flex;
   align-items: center;
-  padding-left: 24px;
+  padding: 0 0 0 1rem;
+  margin: 0;
 }
 
 .logo {
@@ -168,7 +171,7 @@
 .nav-icon {
   height: 16px;
   width: 16px;
-  margin-right: 8px;
+  margin-right: 0.5rem; /* 8px */
   color: #6B6B6B;
   opacity: 0.8;
 }
@@ -278,7 +281,9 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  margin: 0 auto;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .center-nav-item {
@@ -319,7 +324,9 @@
 .header-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 1rem;
+  margin-left: auto;
+  padding: 0 1rem 0 0;
 }
 
 .icon-button {
