@@ -142,8 +142,9 @@
             margin: '0 auto',
             boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
           }">
-            <textarea
-              v-model="content"
+            <div
+              ref="editor"
+              contenteditable="true"
               class="w-full h-full p-8 outline-none resize-none bg-white"
               :style="{
                 fontSize: `${settings.fontSize}px`,
@@ -151,28 +152,22 @@
                 color: settings.textColor,
                 textAlign: settings.textAlign,
                 lineHeight: '1.5',
-                fontWeight: settings.isBold ? 'bold' : 'normal',
-                fontStyle: settings.isItalic ? 'italic' : 'normal',
-                textDecoration: settings.isUnderline ? 'underline' : 'none',
-                direction: 'ltr',
                 minHeight: '100%',
                 boxSizing: 'border-box',
                 border: 'none',
                 backgroundImage: 'none',
-                overflow: 'hidden',
+                overflow: 'auto',
                 fontVariantLigatures: 'none',
                 lineBreak: 'normal',
                 whiteSpace: 'pre-wrap',
                 wordWrap: 'break-word',
                 WebkitFontSmoothing: 'antialiased',
                 MozOsxFontSmoothing: 'grayscale',
-                WebkitTextFillColor: settings.textColor
               }"
-              placeholder="Start typing here..."
+              placeholder="Start typing..."
               @input="handleTextInput"
               @keydown.delete="handleDelete"
-              ref="editor"
-            ></textarea>
+            ></div>
           </div>
         </div>
       </main>
@@ -266,11 +261,11 @@ const wordCount = computed(() => {
 })
 
 // Refs
-const editor = ref<HTMLTextAreaElement | null>(null)
+const editor = ref<HTMLDivElement | null>(null)
 
 // Methods
 const handleTextInput = (e: Event) => {
-  // This will be handled by v-model
+  content.value = (e.target as HTMLDivElement).innerHTML
 }
 
 const handleDelete = (e: KeyboardEvent) => {
@@ -291,6 +286,9 @@ const addNewChapter = () => {
 const selectChapter = (chapter: Chapter) => {
   currentChapter.value = chapter
   content.value = chapter.content
+  if (editor.value) {
+    editor.value.innerHTML = chapter.content
+  }
 }
 
 const saveContent = () => {
@@ -317,6 +315,9 @@ const toggleVoiceInput = () => {
         .join('')
       
       content.value += transcript
+      if (editor.value) {
+        editor.value.innerHTML += transcript
+      }
     }
   }
 
@@ -339,6 +340,9 @@ const handleImageUpload = (event: Event) => {
     reader.onload = (e) => {
       const img = `\n![${file.name}](${e.target?.result})\n`
       content.value += img
+      if (editor.value) {
+        editor.value.innerHTML += img
+      }
     }
     reader.readAsDataURL(file)
   }
@@ -355,19 +359,19 @@ const increaseZoom = () => {
 
 // Formatting Methods
 const toggleBold = () => {
-  settings.value.isBold = !settings.value.isBold
+  document.execCommand('bold', false, null);
 }
 
 const toggleItalic = () => {
-  settings.value.isItalic = !settings.value.isItalic
+  document.execCommand('italic', false, null);
 }
 
 const toggleUnderline = () => {
-  settings.value.isUnderline = !settings.value.isUnderline
+  document.execCommand('underline', false, null);
 }
 
 const changeAlignment = (align: 'left' | 'center' | 'right' | 'justify') => {
-  settings.value.textAlign = align
+  document.execCommand('justify' + align.charAt(0).toUpperCase() + align.slice(1), false, null);
 }
 
 const changeLineSpacing = (spacing: 1 | 1.15 | 1.5 | 2) => {
@@ -399,6 +403,9 @@ const adjustIndent = (direction: 'increase' | 'decrease') => {
 const insertList = (type: 'bullet' | 'number') => {
   const prefix = type === 'bullet' ? '• ' : '1. '
   content.value += `\n${prefix}`
+  if (editor.value) {
+    editor.value.innerHTML += `<p>${prefix}</p>`
+  }
 }
 </script>
 
@@ -418,7 +425,7 @@ body {
   font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-textarea {
+[contenteditable="true"] {
   background: linear-gradient(to bottom, transparent 0%, transparent 97%, #e5e7eb 97%, #e5e7eb 100%);
   background-size: 100% 1.75rem;
   line-height: v-bind('lineHeightValue');
