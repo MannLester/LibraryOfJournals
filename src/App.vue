@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref, computed } from 'vue'; // Added computed
 import Header from './components/Header.vue'
 import LandingPage from './views/LandingPage.vue'
 import HomePage from './views/HomePage.vue'
@@ -17,16 +17,30 @@ const currentPage = ref('home');
 
 // Listen for navigation events from the Header component
 onMounted(() => {
-  window.addEventListener('showPage', (event: CustomEvent) => {
-    const { page } = event.detail;
+  window.addEventListener('showPage', (event: Event) => {
+    const { page } = (event as CustomEvent).detail;
     currentPage.value = page;
   });
+});
+
+const contentAreaStyle = computed(() => {
+  if (currentPage.value === 'writing') {
+    return {
+      paddingTop: '0px',
+      minHeight: '100vh'
+    };
+  } else {
+    return {
+      paddingTop: '70px', // Assuming header height is 70px
+      minHeight: 'calc(100vh - 70px)'
+    };
+  }
 });
 </script>
 
 <template>
-  <Header />
-  <div class="content-area">
+  <Header v-if="currentPage !== 'writing'" />
+  <div class="content-area" :style="contentAreaStyle">
     <!-- Background image is now applied via CSS -->
     <div class="content-wrapper">
       <!-- First check authentication, then check which page to show -->
@@ -54,12 +68,12 @@ onMounted(() => {
 .content-area {
   background-color: #FCFAF7;
   position: relative;
-  min-height: calc(100vh - 70px);
+  /* min-height: calc(100vh - 70px); */ /* Removed */
   width: 100vw;
   margin-left: calc(-50vw + 50%);
   margin-right: calc(-50vw + 50%);
   padding: 0;
-  padding-top: 70px; /* Add padding equal to header height */
+  /* padding-top: 70px; */ /* Removed */
   left: 0;
   right: 0;
   overflow-x: hidden;

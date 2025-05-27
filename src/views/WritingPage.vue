@@ -1,470 +1,347 @@
 <template>
-  <div class="h-screen flex flex-col bg-white">
-    <!-- Header -->
-    <header class="border-b border-gray-200">
-      <div class="flex items-center justify-between px-4 py-2">
-        <div class="flex items-center space-x-2">
-          <span class="text-2xl font-bold text-blue-600">Library of Journals</span>
-          <button @click="isSidebarOpen = !isSidebarOpen" class="p-2 hover:bg-gray-100 rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-            </svg>
-          </button>
-        </div>
-        <div class="flex items-center space-x-4">
-          <div class="flex items-center space-x-2">
-            <button @click="decreaseZoom" class="p-1 hover:bg-gray-100 rounded">-</button>
-            <span class="text-sm">{{ Math.round(zoom * 100) }}%</span>
-            <button @click="increaseZoom" class="p-1 hover:bg-gray-100 rounded">+</button>
-          </div>
-          <button @click="saveContent" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-            Save
-          </button>
-        </div>
+  <div class="writing-page-container">
+    <!-- Top Navigation Bar -->
+    <div class="top-nav-bar">
+      <button class="back-to-home">
+        <span class="icon-home"></span> Back to Home
+      </button>
+      <div class="view-options">
+        <button class="view-toggle-btn active">Single Page</button>
+        <button class="view-toggle-btn">Double Page</button>
       </div>
-      
-      <!-- Formatting Toolbar -->
-      <div class="border-t border-gray-200 px-4 py-1 flex items-center space-x-2 overflow-x-auto">
-        <div class="relative group">
-          <select v-model="currentStyle" @change="applyStyle" class="text-sm border rounded px-2 py-1 pr-6 appearance-none bg-white">
-            <option value="normal">Normal text</option>
-            <option value="heading1">Heading 1</option>
-            <option value="heading2">Heading 2</option>
-            <option value="heading3">Heading 3</option>
-            <option value="title">Title</option>
-            <option value="subtitle">Subtitle</option>
-          </select>
-          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-            </svg>
-          </div>
-        </div>
-        
-        <div class="h-6 w-px bg-gray-300 mx-1"></div>
-        
-        <select v-model="settings.fontFamily" class="text-sm border rounded px-2 py-1">
-          <option value="sans">Arial</option>
-          <option value="serif">Times New Roman</option>
-          <option value="mono">Courier New</option>
-        </select>
-        
-        <select v-model="settings.fontSize" class="text-sm border rounded px-2 py-1 w-16">
-          <option v-for="size in [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72]" :value="size">
-            {{ size }}
-          </option>
-        </select>
-        
-        <div class="h-6 w-px bg-gray-300 mx-1"></div>
-        
-        <button @click="toggleBold" :class="{'bg-gray-200': settings.isBold}" class="p-1 rounded hover:bg-gray-100">
-          <span class="font-bold">B</span>
-        </button>
-        <button @click="toggleItalic" :class="{'bg-gray-200': settings.isItalic}" class="p-1 rounded hover:bg-gray-100">
-          <em>I</em>
-        </button>
-        <button @click="toggleUnderline" :class="{'bg-gray-200': settings.isUnderline}" class="p-1 rounded hover:bg-gray-100">
-          <u>U</u>
-        </button>
-        
-        <div class="h-6 w-px bg-gray-300 mx-1"></div>
-        
-        <button @click="changeAlignment('left')" :class="{'bg-gray-200': settings.textAlign === 'left'}" class="p-1 rounded hover:bg-gray-100">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-          </svg>
-        </button>
-        <button @click="changeAlignment('center')" :class="{'bg-gray-200': settings.textAlign === 'center'}" class="p-1 rounded hover:bg-gray-100">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M4 5a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zm2 5a1 1 0 100 2h8a1 1 0 100-2H6zm-1 5a1 1 0 011-1h10a1 1 0 110 2H6a1 1 0 01-1-1z" clip-rule="evenodd" />
-          </svg>
-        </button>
-        <button @click="changeAlignment('right')" :class="{'bg-gray-200': settings.textAlign === 'right'}" class="p-1 rounded hover:bg-gray-100">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm4 5a1 1 0 100 2h8a1 1 0 100-2H7zm-4 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
-          </svg>
-        </button>
-        
-        <div class="h-6 w-px bg-gray-300 mx-1"></div>
-        
-        <input type="color" v-model="settings.textColor" class="w-6 h-6 p-0 border-0 rounded overflow-hidden cursor-pointer" title="Text color">
-        <button class="p-1 rounded hover:bg-gray-100">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M4 3a1 1 0 011-1h10a1 1 0 011 1v5a1 1 0 11-2 0V6.414l-4.293 4.293a1 1 0 01-1.414 0L6 6.414V8a1 1 0 11-2 0V3z" clip-rule="evenodd" />
-            <path fill-rule="evenodd" d="M4 13a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1z" clip-rule="evenodd" />
-          </svg>
-        </button>
+      <div class="zoom-controls">
+        <button class="zoom-btn">-</button>
+        <span>90%</span>
+        <button class="zoom-btn">+</button>
       </div>
-    </header>
-    
-    <div class="flex flex-1 overflow-hidden">
-      <!-- Sidebar -->
-      <aside :class="{'w-64': isSidebarOpen, 'w-0': !isSidebarOpen}" class="h-full bg-white border-r border-gray-200 transition-all duration-200 overflow-hidden">
-        <div class="p-4">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-lg font-medium">Chapters</h2>
-            <button @click="addNewChapter" class="text-blue-600 hover:text-blue-800">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-              </svg>
-            </button>
-          </div>
-          
-          <input 
-            type="text" 
-            v-model="chapterSearch" 
-            placeholder="Search in document" 
-            class="w-full px-3 py-2 border rounded-lg text-sm mb-4"
-          >
-          
-          <div class="space-y-1">
-            <div 
-              v-for="chapter in filteredChapters" 
-              :key="chapter.id"
-              @click="selectChapter(chapter)"
-              class="px-3 py-2 text-sm rounded hover:bg-gray-100 cursor-pointer"
-              :class="{'bg-blue-50 text-blue-700': currentChapter?.id === chapter.id}"
-            >
-              {{ chapter.title }}
+      <div class="mode-toggle">
+        <button class="mode-btn active">Write Mode</button>
+        <button class="mode-btn">Present Mode</button>
+      </div>
+    </div>
+
+    <div class="main-content-area">
+      <!-- Left Sidebar -->
+      <div class="left-sidebar">
+        <div class="search-bar">
+          <input type="text" placeholder="Search journals..." />
+        </div>
+        <button class="new-journal-btn">
+          <span class="icon-plus"></span> New Journal
+        </button>
+        <div class="journal-filters">
+          <button class="filter-tab active">All</button>
+          <button class="filter-tab">Recent</button>
+          <button class="filter-tab">Starred</button>
+        </div>
+        <div class="journal-list">
+          <!-- Placeholder for journal items -->
+          <div class="journal-item">
+            <span class="journal-icon"></span>
+            <div class="journal-details">
+              <p class="journal-title">Morning Reflections</p>
+              <p class="journal-meta">Today - 24 chapters</p>
             </div>
           </div>
-        </div>
-      </aside>
-      
-      <!-- Main Content -->
-      <main class="flex-1 flex flex-col overflow-hidden bg-gray-50">
-        <div class="flex-1 overflow-auto p-8">
-          <div class="relative mx-auto bg-white shadow-lg rounded-sm" :style="{
-            width: `${8.5 * zoom}in`,
-            minHeight: `${11 * zoom}in`,
-            padding: `${1 * zoom}in`,
-            boxSizing: 'border-box',
-            margin: '0 auto',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-          }">
-            <div
-              ref="editor"
-              contenteditable="true"
-              class="w-full h-full p-8 outline-none resize-none bg-white"
-              :style="{
-                fontSize: `${settings.fontSize}px`,
-                fontFamily: settings.fontFamily === 'sans' ? 'Arial, sans-serif' : settings.fontFamily === 'serif' ? 'Times New Roman, serif' : 'Courier New, monospace',
-                color: settings.textColor,
-                textAlign: settings.textAlign,
-                lineHeight: '1.5',
-                minHeight: '100%',
-                boxSizing: 'border-box',
-                border: 'none',
-                backgroundImage: 'none',
-                overflow: 'auto',
-                fontVariantLigatures: 'none',
-                lineBreak: 'normal',
-                whiteSpace: 'pre-wrap',
-                wordWrap: 'break-word',
-                WebkitFontSmoothing: 'antialiased',
-                MozOsxFontSmoothing: 'grayscale',
-              }"
-              placeholder="Start typing..."
-              @input="handleTextInput"
-              @keydown.delete="handleDelete"
-            ></div>
+          <div class="journal-item">
+            <span class="journal-icon"></span>
+            <div class="journal-details">
+              <p class="journal-title">Travel Memories: V...</p>
+              <p class="journal-meta">Yesterday - 15 chapters</p>
+            </div>
           </div>
+          <!-- ... more journal items -->
         </div>
-      </main>
-    </div>
-    
-    <!-- Status Bar -->
-    <footer class="border-t border-gray-200 px-4 py-1 text-xs text-gray-500 flex justify-between items-center">
-      <div>Words: {{ wordCount }}</div>
-      <div>
-        <button @click="toggleVoiceInput" class="p-1 rounded-full hover:bg-gray-100" :class="{'text-red-500': isRecording}">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
-          </svg>
+        <button class="settings-btn">
+          <span class="icon-settings"></span> Settings
         </button>
       </div>
-    </footer>
+
+      <!-- Editor Area -->
+      <div class="editor-area">
+        <div class="editor-content">
+          <h1>Untitled Journal</h1>
+          <p>Start writing your thoughts here...</p>
+          <!-- This is where the actual text editor would go -->
+        </div>
+        <div class="bottom-pagination">
+          <button class="pagination-btn">&lt; Previous</button>
+          <span>Page 1 of 1</span>
+          <button class="pagination-btn">Next &gt;</button>
+        </div>
+      </div>
+
+      <!-- Right Toolbar -->
+      <div class="right-toolbar">
+        <button class="toolbar-btn"><span class="icon-save"></span></button>
+        <button class="toolbar-btn"><span class="icon-mic"></span></button>
+        <button class="toolbar-btn"><span class="icon-clock"></span></button>
+        <button class="toolbar-btn"><span class="icon-undo"></span></button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-
-interface Chapter {
-  id: string
-  title: string
-  content: string
-  dateCreated: Date
-  lastModified: Date
-}
-
-interface WritingSettings {
-  fontFamily: string
-  fontSize: number
-  pageColor: string
-  textColor: string
-  textAlign: 'left' | 'center' | 'right' | 'justify'
-  lineSpacing: 1 | 1.15 | 1.5 | 2
-  isBold: boolean
-  isItalic: boolean
-  isUnderline: boolean
-  indentLevel: number
-}
-
-// State
-const zoom = ref(1)
-const mode = ref('write')
-const content = ref('') // This holds the text content of the editor
-const currentStyle = ref('normal') // Current text style
-const isSidebarOpen = ref(true)
-const isScrolled = ref(false)
-
-// Computed values for numeric properties
-const lineHeightValue = computed(() => `${settings.value.lineSpacing * 1.75}rem`)
-const indentValue = computed(() => `${1 + settings.value.indentLevel * 0.5}rem`)
-const fontSizeValue = computed(() => `${settings.value.fontSize}px`)
-
-// Chapter Management
-const chapters = ref<Chapter[]>([])
-const currentChapter = ref<Chapter | null>(null)
-const chapterSearch = ref('')
-const filteredChapters = computed(() => {
-  return chapters.value.filter(chapter => 
-    chapter.title.toLowerCase().includes(chapterSearch.value.toLowerCase())
-  )
-})
-
-// Settings
-const settings = ref<WritingSettings>({
-  fontFamily: 'serif',
-  fontSize: 16,
-  pageColor: '#ffffff',
-  textColor: '#000000',
-  textAlign: 'left',
-  lineSpacing: 1.15,
-  isBold: false,
-  isItalic: false,
-  isUnderline: false,
-  indentLevel: 0
-})
-
-// Voice Input
-const isRecording = ref(false)
-const recognition = ref<any>(null)
-
-// Image Upload
-const imageInput = ref<HTMLInputElement | null>(null)
-
-// Computed
-const wordCount = computed(() => {
-  return content.value.trim() ? content.value.trim().split(/\s+/).length : 0
-})
-
-// Refs
-const editor = ref<HTMLDivElement | null>(null)
-
-// Methods
-const handleTextInput = (e: Event) => {
-  content.value = (e.target as HTMLDivElement).innerHTML
-}
-
-const handleDelete = (e: KeyboardEvent) => {
-  // Let the default delete behavior happen
-}
-
-const addNewChapter = () => {
-  const newChapter: Chapter = {
-    id: Date.now().toString(),
-    title: 'New Chapter',
-    content: '',
-    dateCreated: new Date(),
-    lastModified: new Date()
-  }
-  chapters.value.push(newChapter)
-}
-
-const selectChapter = (chapter: Chapter) => {
-  currentChapter.value = chapter
-  content.value = chapter.content
-  if (editor.value) {
-    editor.value.innerHTML = chapter.content
-  }
-}
-
-const saveContent = () => {
-  if (currentChapter.value) {
-    currentChapter.value.content = content.value
-    currentChapter.value.lastModified = new Date()
-    console.log('Content saved:', currentChapter.value)
-    // Here you would typically make an API call to save the content
-  } else {
-    console.log('No chapter selected')
-  }
-}
-
-const toggleVoiceInput = () => {
-  if (!recognition.value) {
-    recognition.value = new (window.webkitSpeechRecognition || window.SpeechRecognition)()
-    recognition.value.continuous = true
-    recognition.value.interimResults = true
-    
-    recognition.value.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map(result => result[0])
-        .map(result => result.transcript)
-        .join('')
-      
-      content.value += transcript
-      if (editor.value) {
-        editor.value.innerHTML += transcript
-      }
-    }
-  }
-
-  if (!isRecording.value) {
-    recognition.value.start()
-  } else {
-    recognition.value.stop()
-  }
-  isRecording.value = !isRecording.value
-}
-
-const triggerImageUpload = () => {
-  imageInput.value?.click()
-}
-
-const handleImageUpload = (event: Event) => {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = `\n![${file.name}](${e.target?.result})\n`
-      content.value += img
-      if (editor.value) {
-        editor.value.innerHTML += img
-      }
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-// Zoom controls
-const decreaseZoom = () => {
-  if (zoom.value > 0.5) zoom.value -= 0.1
-}
-
-const increaseZoom = () => {
-  if (zoom.value < 2) zoom.value += 0.1
-}
-
-// Formatting Methods
-const toggleBold = () => {
-  document.execCommand('bold', false, null);
-}
-
-const toggleItalic = () => {
-  document.execCommand('italic', false, null);
-}
-
-const toggleUnderline = () => {
-  document.execCommand('underline', false, null);
-}
-
-const changeAlignment = (align: 'left' | 'center' | 'right' | 'justify') => {
-  document.execCommand('justify' + align.charAt(0).toUpperCase() + align.slice(1), false, null);
-}
-
-const changeLineSpacing = (spacing: 1 | 1.15 | 1.5 | 2) => {
-  settings.value.lineSpacing = spacing
-}
-
-const applyStyle = () => {
-  const styleMap = {
-    'normal': { fontSize: 12, isBold: false, isItalic: false },
-    'heading1': { fontSize: 26, isBold: true, isItalic: false },
-    'heading2': { fontSize: 20, isBold: true, isItalic: false },
-    'heading3': { fontSize: 16, isBold: true, isItalic: true },
-    'title': { fontSize: 24, isBold: true, isItalic: false },
-    'subtitle': { fontSize: 14, isBold: false, isItalic: true }
-  }
-  
-  const style = styleMap[currentStyle.value] || styleMap.normal
-  Object.assign(settings.value, style)
-}
-
-const adjustIndent = (direction: 'increase' | 'decrease') => {
-  if (direction === 'increase' && settings.value.indentLevel < 4) {
-    settings.value.indentLevel++
-  } else if (direction === 'decrease' && settings.value.indentLevel > 0) {
-    settings.value.indentLevel--
-  }
-}
-
-const insertList = (type: 'bullet' | 'number') => {
-  const prefix = type === 'bullet' ? '• ' : '1. '
-  content.value += `\n${prefix}`
-  if (editor.value) {
-    editor.value.innerHTML += `<p>${prefix}</p>`
-  }
-}
+// Script setup area for future logic
 </script>
 
-<style>
-* {
+<style scoped>
+.writing-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* Prevent scrollbars on the main container */
+  background-color: #f0f0f0; /* Light grey background for the page */
+}
+
+.top-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  height: 60px; /* Fixed height for top nav */
   box-sizing: border-box;
 }
 
-html, body, #app {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
+.back-to-home {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
 }
 
-body {
-  font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+.icon-home { /* Placeholder for an icon */
+  margin-right: 5px;
 }
 
-[contenteditable="true"] {
-  background: linear-gradient(to bottom, transparent 0%, transparent 97%, #e5e7eb 97%, #e5e7eb 100%);
-  background-size: 100% 1.75rem;
-  line-height: v-bind('lineHeightValue');
-  font-family: v-bind('settings.fontFamily');
-  font-size: v-bind('fontSizeValue');
-  color: v-bind('settings.textColor');
-  text-align: v-bind('settings.textAlign');
-  padding-left: v-bind('indentValue');
+.view-options, .zoom-controls, .mode-toggle {
+  display: flex;
+  align-items: center;
 }
 
-.writing-page {
-  background-color: v-bind('settings.pageColor');
+.view-options button, .zoom-controls button, .mode-toggle button {
+  margin: 0 5px;
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  cursor: pointer;
 }
 
-.bold {
+.view-options button.active, .mode-toggle button.active {
+  background-color: #e0e0e0;
   font-weight: bold;
 }
 
-.italic {
-  font-style: italic;
+.zoom-controls span {
+  padding: 0 10px;
+  font-size: 0.9rem;
 }
 
-.underline {
-  text-decoration: underline;
+.main-content-area {
+  display: flex;
+  flex-grow: 1; /* Takes remaining height */
+  overflow: hidden; /* Important for nested scrolling */
 }
 
-.indent-1 {
-  padding-left: 1rem;
+.left-sidebar {
+  width: 280px; /* Fixed width for sidebar */
+  background-color: #f7f7f7;
+  padding: 20px;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* Allow sidebar to scroll if content overflows */
+  height: calc(100vh - 60px); /* Full height minus top-nav */
+  box-sizing: border-box;
 }
 
-.indent-2 {
-  padding-left: 2rem;
+.search-bar input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
 }
 
-.indent-3 {
-  padding-left: 3rem;
+.new-journal-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #E9184C; /* Primary color from image */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.indent-4 {
-  padding-left: 4rem;
+.icon-plus { /* Placeholder */
+  margin-right: 8px;
 }
+
+.journal-filters {
+  display: flex;
+  margin-bottom: 15px;
+}
+
+.journal-filters .filter-tab {
+  flex-grow: 1;
+  padding: 8px;
+  text-align: center;
+  background: none;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  border-right-width: 0;
+}
+.journal-filters .filter-tab:last-child {
+  border-right-width: 1px;
+}
+.journal-filters .filter-tab.active {
+  background-color: #e0e0e0;
+  font-weight: bold;
+}
+
+.journal-list {
+  flex-grow: 1; /* Takes available space */
+  overflow-y: auto; /* Scroll for journal items */
+}
+
+.journal-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.journal-item:last-child {
+  border-bottom: none;
+}
+.journal-icon { /* Placeholder */
+  width: 24px;
+  height: 24px;
+  background-color: #ddd; /* Placeholder color */
+  margin-right: 10px;
+  border-radius: 3px;
+}
+.journal-details .journal-title {
+  font-weight: bold;
+  margin: 0 0 3px 0;
+}
+.journal-details .journal-meta {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0;
+}
+
+.settings-btn {
+  margin-top: auto; /* Pushes to the bottom */
+  padding: 10px;
+  background: none;
+  border: 1px solid #ccc;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+.icon-settings { /* Placeholder */
+  margin-right: 5px;
+}
+
+.editor-area {
+  flex-grow: 1; /* Takes up remaining space */
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  padding: 20px;
+  overflow-y: auto; /* Allow editor content to scroll */
+  height: calc(100vh - 60px); /* Full height minus top-nav */
+  box-sizing: border-box;
+}
+
+.editor-content {
+  flex-grow: 1;
+  background-color: #fffaf0; /* Creamy background for paper */
+  padding: 40px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.editor-content h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2rem;
+  margin-top: 0;
+}
+
+.editor-content p {
+  font-family: 'Roboto', sans-serif;
+  font-size: 1rem;
+  color: #555;
+}
+
+.bottom-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  margin-top: 10px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.pagination-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.right-toolbar {
+  width: 60px; /* Fixed width for right toolbar */
+  background-color: #f7f7f7;
+  border-left: 1px solid #e0e0e0;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: calc(100vh - 60px); /* Full height minus top-nav */
+  box-sizing: border-box;
+}
+
+.toolbar-btn {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 50%; /* Circular buttons */
+  background-color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.toolbar-btn .icon-save, /* Placeholders */
+.toolbar-btn .icon-mic,
+.toolbar-btn .icon-clock,
+.toolbar-btn .icon-undo {
+  font-size: 1.2rem; /* Adjust as needed for actual icons */
+}
+
+/* Basic icon placeholders - replace with actual icons or SVGs */
+.icon-home::before { content: "🏠"; }
+.icon-plus::before { content: "+"; }
+.icon-settings::before { content: "⚙️"; }
+.icon-save::before { content: "💾"; } /* Example, from image it's a floppy disk like icon */
+.icon-mic::before { content: "🎤"; }
+.icon-clock::before { content: "🕒"; }
+.icon-undo::before { content: "↩️"; } /* Or a redo icon, image is a bit blurry */
+.journal-icon::before { content: "📖"; } /* Generic book icon for journal items */
 </style>
