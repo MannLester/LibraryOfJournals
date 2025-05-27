@@ -90,27 +90,18 @@
 
         <!-- Bottom Navigation -->
         <div class="bottom-nav-bar">
-          <div class="nav-section">
-            <button class="view-toggle-btn">Single Page</button>
-            <button class="view-toggle-btn">Double Page</button>
+          <div class="nav-section left-section">
+            <button class="pagination-btn" title="Previous page">
+              <span class="icon-arrow-left"></span> Previous
+            </button>
           </div>
-          <div class="nav-section">
-            <div class="page-controls">
-              <button class="pagination-btn" title="Previous page">
-                <span class="icon-arrow-left"></span> Previous
-              </button>
-              <span class="page-indicator">Page 1 of 1</span>
-              <button class="pagination-btn" title="Next page">
-                Next <span class="icon-arrow-right"></span>
-              </button>
-            </div>
+          <div class="nav-section center-section">
+            <span class="page-indicator">Page 1 of 1</span>
           </div>
-          <div class="nav-section">
-            <div class="zoom-controls">
-              <button class="zoom-btn">-</button>
-              <span>100%</span>
-              <button class="zoom-btn">+</button>
-            </div>
+          <div class="nav-section right-section">
+            <button class="pagination-btn" title="Next page">
+              Next <span class="icon-arrow-right"></span>
+            </button>
           </div>
         </div>
       </div>
@@ -417,46 +408,65 @@
 
 .editor-content {
   background-color: #fff;
-  padding: 60px 80px;
+  padding: 6vh 8vh;
   border: 1px solid #e0e0e0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  width: 210mm; /* A4 width */
-  min-height: 297mm; /* A4 height */
-  margin: 30px auto;
+  width: 100vh; /* A4 width based on height */
+  min-height: 113.14vh; /* A4 height (80vh * 1.414) */
+  margin: 2vh auto;
   box-sizing: border-box;
   position: relative;
   background: white;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  transform: scale(0.8); /* Scale down to fit */
   transform-origin: top center;
-  margin-bottom: 30px;
+  overflow-y: auto;
+  transform: scale(0.8);
+  transform-origin: top center;
+}
+
+@media (max-width: 1200px) {
+  .editor-content {
+    transform: scale(0.7);
+  }
+}
+
+@media (max-width: 768px) {
+  .editor-content {
+    width: 90vw;
+    height: calc(90vw * 1.414); /* A4 aspect ratio */
+    transform: none;
+    padding: 4vh 5vw;
+    margin: 2vh auto;
+  }
 }
 
 .editor-content h1 {
-  font-size: 1.5rem;
-  margin: 0 0 1.5rem 0;
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  margin: 0 0 2vh 0;
   color: #333;
   font-weight: 500;
   border-bottom: 1px solid #eee;
-  padding-bottom: 0.5rem;
+  padding-bottom: 1vh;
 }
 
 .editor-content p {
-  font-size: 0.95rem;
+  font-size: clamp(0.9rem, 1.1vw, 1.1rem);
   line-height: 1.8;
   color: #333;
-  margin: 0 0 1rem 0;
+  margin: 0 0 1.5vh 0;
   text-align: justify;
 }
 
 /* Bottom Navigation */
 .bottom-nav-bar {
-  height: 60px;
+  height: 10vh;
+  min-height: 80px;
+  max-height: 100px;
   background-color: #ffffff;
   border-top: 1px solid #e0e0e0;
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 4vw;
   box-sizing: border-box;
   width: 100%;
 }
@@ -468,16 +478,18 @@
   height: 100%;
 }
 
-.bottom-nav-bar .nav-section:first-child {
+.bottom-nav-bar .left-section {
   justify-content: flex-start;
+  padding-left: 0;
 }
 
-.bottom-nav-bar .nav-section:nth-child(2) {
+.bottom-nav-bar .center-section {
   justify-content: center;
 }
 
-.bottom-nav-bar .nav-section:last-child {
+.bottom-nav-bar .right-section {
   justify-content: flex-end;
+  padding-right: 0;
 }
 
 .page-controls {
@@ -487,34 +499,40 @@
 }
 
 .page-indicator {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #555;
-  margin: 0 10px;
+  font-weight: 500;
 }
 
 .pagination-btn {
-  padding: 6px 12px;
+  padding: 0.8vh 2vw;
   background: #f8f9fa;
   border: 1px solid #dee2e6;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: clamp(0.85rem, 1.2vw, 1rem);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.8vw;
   transition: all 0.2s;
+  height: 4.5vh;
+  min-height: 36px;
+  max-height: 44px;
 }
 
 .pagination-btn:hover {
   background-color: #e9ecef;
   border-color: #ced4da;
+  transform: translateY(-1px);
 }
 
 .icon-arrow-left,
 .icon-arrow-right {
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: 1.6vh;
+  height: 1.6vh;
+  min-width: 14px;
+  min-height: 14px;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
