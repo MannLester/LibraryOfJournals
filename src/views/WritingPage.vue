@@ -106,18 +106,18 @@
         </div>
       </div>
 
-      <!-- Right Toolbar -->
-      <div class="right-toolbar">
-        <button class="toolbar-btn">
+      <!-- Floating Action Buttons -->
+      <div class="floating-actions">
+        <button class="fab" title="Save">
           <span class="icon-save"></span>
         </button>
-        <button class="toolbar-btn">
+        <button class="fab" title="Voice Input">
           <span class="icon-mic"></span>
         </button>
-        <button class="toolbar-btn">
+        <button class="fab" title="History">
           <span class="icon-clock"></span>
         </button>
-        <button class="toolbar-btn">
+        <button class="fab" title="Undo">
           <span class="icon-undo"></span>
         </button>
       </div>
@@ -411,8 +411,8 @@
   padding: 6vh 8vh;
   border: 1px solid #e0e0e0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  width: 100vh; /* A4 width based on height */
-  min-height: 113.14vh; /* A4 height (80vh * 1.414) */
+  width: 90vh; /* A4 width based on height */
+  min-height: 127.26vh; /* A4 height (90vh * 1.414) */
   margin: 2vh auto;
   box-sizing: border-box;
   position: relative;
@@ -590,6 +590,59 @@
 .toolbar-btn .icon-undo {
   font-size: 1.2rem;
   color: #555;
+}
+
+/* Floating Action Buttons */
+.floating-actions {
+  position: fixed;
+  right: 2vw;
+  bottom: 12vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5vh;
+  z-index: 100;
+  transition: all 0.3s ease;
+}
+
+.fab {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  color: #555;
+  font-size: 1.2rem;
+}
+
+.fab:hover {
+  background: #f8f9fa;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.fab:active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .floating-actions {
+    bottom: 15vh;
+    right: 3vw;
+  }
+  
+  .fab {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+  }
 }
 
 /* Icons */
