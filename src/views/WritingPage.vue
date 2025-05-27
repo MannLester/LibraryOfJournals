@@ -12,9 +12,9 @@
         
         <div class="nav-section">
           <div class="zoom-controls">
-            <button class="zoom-btn">-</button>
-            <span>90%</span>
-            <button class="zoom-btn">+</button>
+            <button class="zoom-btn" @click="handleZoomOut">-</button>
+            <span class="zoom-percent" :class="{ 'zoom-changed': zoomChanged }">{{ zoomLevel }}%</span>
+            <button class="zoom-btn" @click="handleZoomIn">+</button>
           </div>
         </div>
         
@@ -125,9 +125,6 @@
   </div>
 </template>
 
-<script setup lang="ts">
-// Script setup area for future logic
-</script>
 
 <style scoped>
 .writing-page-container {
@@ -183,28 +180,121 @@
   justify-content: flex-end;
 }
 
-.view-options, .mode-toggle {
+.view-options {
+  background: #f5f5f5; /* Light gray background */
+  border-radius: 8px;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  height: 40px;
+}
+
+.zoom-controls {
+  background: #f5f5f5; /* Light gray background */
+  border-radius: 8px;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  height: 40px;
+  gap: 0;
+  margin-right: 15px; /* Add some spacing between controls */
+}
+
+@keyframes zoomPulse {
+  0% { color: #6c757d; }
+  50% { color: #E9184C; }
+  100% { color: #6c757d; }
+}
+
+.zoom-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #6c757d; /* Dark gray text */
+  transition: color 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 5px;
-  height: 100%;
+  justify-content: center;
+  padding: 0;
 }
 
-.view-toggle-btn, .mode-btn {
-  padding: 6px 16px;
-  border: 1px solid #ddd;
-  background-color: #f5f5f5;
+.zoom-btn:hover {
+  color: #E9184C; /* Red color on hover */
+}
+
+.zoom-percent {
+  font-size: 0.9rem;
+  color: #6c757d;
+  min-width: 40px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.mode-toggle {
+  background: #f5f5f5; /* Light gray background */
+  border-radius: 8px;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  height: 40px;
+  gap: 0; /* Remove gap since we're using padding */
+}
+
+.view-toggle-btn {
+  padding: 0 20px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 0.9rem;
-  border-radius: 4px;
-  transition: all 0.2s;
   font-weight: 500;
-  color: #555;
+  background: transparent;
+  color: #6c757d; /* Dark gray for inactive text */
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.view-toggle-btn.active, .mode-btn.active {
-  background-color: #e0e0e0;
-  font-weight: bold;
+.view-toggle-btn:hover {
+  color: #212529;
+}
+
+.view-toggle-btn.active {
+  background: white;
+  color: #E9184C;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  font-weight: 600;
+}
+
+.mode-btn {
+  padding: 0 20px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: transparent;
+  color: #6c757d; /* Dark gray for inactive text */
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.mode-btn:hover {
+  color: #212529;
+}
+
+.mode-btn.active {
+  background: white;
+  color: #E9184C;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  font-weight: 600;
 }
 
 .main-content-area {
@@ -420,8 +510,7 @@
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   transform-origin: top center;
   overflow-y: auto;
-  transform: scale(0.8);
-  transform-origin: top center;
+  transition: transform 0.2s ease;
 }
 
 @media (max-width: 1200px) {
@@ -655,3 +744,47 @@
 .icon-undo::before { content: "↩️"; }
 .journal-icon::before { content: "📄"; }
 </style>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+
+const zoomLevel = ref(90);
+const zoomChanged = ref(false);
+let zoomTimeout = null;
+
+const handleZoomIn = () => {
+  if (zoomLevel.value < 150) {
+    zoomLevel.value += 10;
+    triggerZoomChange();
+  }
+};
+
+const handleZoomOut = () => {
+  if (zoomLevel.value > 50) {
+    zoomLevel.value -= 10;
+    triggerZoomChange();
+  }
+};
+
+const triggerZoomChange = () => {
+  // Apply the zoom to the editor content
+  const scale = zoomLevel.value / 100;
+  const editor = document.querySelector('.editor-content');
+  if (editor) {
+    editor.style.transform = `scale(${scale})`;
+    editor.style.transformOrigin = 'top center';
+  }
+  
+  // Trigger the animation
+  zoomChanged.value = true;
+  if (zoomTimeout) clearTimeout(zoomTimeout);
+  zoomTimeout = setTimeout(() => {
+    zoomChanged.value = false;
+  }, 600);
+};
+
+// Initialize zoom when component is mounted
+onMounted(() => {
+  triggerZoomChange();
+});
+</script>
