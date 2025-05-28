@@ -792,8 +792,14 @@ const isDoublePage = ref(false);
 
 // Toggle view mode
 const toggleViewMode = (mode) => {
+  const wasDoublePage = isDoublePage.value;
   isDoublePage.value = mode === 'double';
-  // You can add additional logic here when view mode changes
+  
+  // Set zoom to 90% when switching to double page
+  if (!wasDoublePage && isDoublePage.value) {
+    zoomLevel.value = 90;
+    triggerZoomChange();
+  }
 };
 
 const handleZoomIn = () => {
