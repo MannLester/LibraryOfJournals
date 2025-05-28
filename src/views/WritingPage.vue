@@ -5,8 +5,20 @@
       <div class="top-nav-content">
         <div class="nav-section">
           <div class="view-options">
-            <button class="view-toggle-btn active">Single Page</button>
-            <button class="view-toggle-btn">Double Page</button>
+            <button 
+              class="view-toggle-btn" 
+              :class="{ 'active': !isDoublePage }"
+              @click="toggleViewMode('single')"
+            >
+              Single Page
+            </button>
+            <button 
+              class="view-toggle-btn"
+              :class="{ 'active': isDoublePage }"
+              @click="toggleViewMode('double')"
+            >
+              Double Page
+            </button>
           </div>
         </div>
         
@@ -88,8 +100,8 @@
           </div>
         </div>
 
-        <!-- Bottom Navigation -->
-        <div class="bottom-nav-bar">
+        <!-- Bottom Navigation - Only show in Double Page mode -->
+        <div class="bottom-nav-bar" v-if="isDoublePage">
           <div class="nav-section left-section">
             <button class="pagination-btn" title="Previous page">
               <span class="icon-arrow-left"></span> Previous
@@ -743,11 +755,20 @@
 </style>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 
 const zoomLevel = ref(90);
 const zoomChanged = ref(false);
 let zoomTimeout = null;
+
+// View mode state
+const isDoublePage = ref(false);
+
+// Toggle view mode
+const toggleViewMode = (mode) => {
+  isDoublePage.value = mode === 'double';
+  // You can add additional logic here when view mode changes
+};
 
 const handleZoomIn = () => {
   if (zoomLevel.value < 150) {
