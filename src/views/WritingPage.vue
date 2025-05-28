@@ -134,7 +134,6 @@
               <!-- This is where the actual text editor would go -->
             </div>
             <div class="page" v-if="isDoublePage">
-              <h1>Page 2</h1>
               <p>Continue writing here...</p>
             </div>
           </div>
