@@ -44,7 +44,24 @@
       <div class="left-sidebar">
         <div class="sidebar-top">
           <button class="back-to-home">
-            <span class="icon-home"></span> Back to Home
+            <span class="home-icon">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                stroke-width="2" 
+                stroke-linecap="round" 
+                stroke-linejoin="round"
+                style="color: inherit;"
+              >
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" style="color: inherit;"/>
+                <polyline points="9,22 9,12 15,12 15,22" style="color: inherit;"/>
+              </svg>
+            </span>
+            <span class="btn-text">Back to Home</span>
           </button>
           <div class="search-bar">
             <input type="text" placeholder="Search chapters..." />
@@ -84,7 +101,24 @@
         
         <div class="sidebar-bottom">
           <button class="settings-btn">
-            <span class="icon-settings"></span> Settings
+            <span class="settings-icon">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                stroke-width="2" 
+                stroke-linecap="round" 
+                stroke-linejoin="round"
+                style="color: inherit;"
+              >
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" style="color: inherit;"/>
+                <circle cx="12" cy="12" r="3" style="color: inherit;"/>
+              </svg>
+            </span>
+            <span class="btn-text">Settings</span>
           </button>
         </div>
       </div>
@@ -361,28 +395,120 @@
 }
 
 .back-to-home {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.95rem;
   display: flex;
   align-items: center;
-  margin: 0 0 15px 0;
+  gap: 12px;
   padding: 8px 12px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-  color: #333;
-  text-decoration: none;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #495057;
+  transition: all 0.2s ease;
   width: 100%;
+  text-align: left;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  box-shadow: none !important;
+}
+
+.back-to-home:focus {
+  outline: none;
+  box-shadow: none;
 }
 
 .back-to-home:hover {
-  background-color: #e9ecef;
+  background-color: #f8f9fa;
+  color: #E9184C;
 }
 
-.icon-home {
-  margin-right: 8px;
-  font-size: 1.1rem;
+.back-to-home:hover .home-icon,
+.back-to-home:hover .home-icon svg,
+.back-to-home:hover .home-icon path,
+.back-to-home:hover .home-icon polyline,
+.back-to-home:hover .btn-text {
+  color: #E9184C;
+  stroke: #E9184C;
+}
+
+.back-to-home:active {
+  background-color: #f1f3f5;
+}
+
+.settings-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #495057;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+  border-radius: 6px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  box-shadow: none !important;
+}
+
+.settings-btn:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.settings-btn:hover {
+  background-color: #f8f9fa;
+  color: #E9184C;
+}
+
+.settings-btn:hover .settings-icon,
+.settings-btn:hover .settings-icon svg,
+.settings-btn:hover .settings-icon path,
+.settings-btn:hover .settings-icon circle,
+.settings-btn:hover .btn-text {
+  color: #E9184C;
+  stroke: #E9184C;
+}
+
+.settings-btn:active {
+  background-color: #f1f3f5;
+}
+
+.settings-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  transition: color 0.2s ease;
+}
+
+.settings-btn:hover .settings-icon {
+  color: #495057;
+}
+
+.home-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  transition: color 0.2s ease;
+}
+
+.back-to-home:hover .home-icon {
+  color: #495057;
+}
+
+.btn-text {
+  font-weight: 500;
 }
 
 .search-bar {
