@@ -586,15 +586,16 @@
 
 /* Bottom Navigation */
 .bottom-nav-bar {
-  min-height: 60px;
+  min-height: 50px;
   background-color: #ffffff;
   border-top: 1px solid #e0e0e0;
   display: flex;
   align-items: center;
-  padding: 10px 4vw 15px;
+  padding: 8px 20px 12px;
   box-sizing: border-box;
   width: 100%;
   color: #6c757d; /* Dark gray text color */
+  font-size: 0.9rem; /* Slightly smaller font */
 }
 
 .bottom-nav-bar .nav-section {
@@ -607,15 +608,19 @@
 .bottom-nav-bar .left-section {
   justify-content: flex-start;
   padding-left: 0;
+  width: 20%;
 }
 
 .bottom-nav-bar .center-section {
   justify-content: center;
+  width: 60%;
 }
 
 .bottom-nav-bar .right-section {
   justify-content: flex-end;
   padding-right: 0;
+  width: 20%;
+  text-align: right;
 }
 
 .page-controls {
@@ -635,13 +640,14 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: clamp(0.9rem, 1.2vw, 1.1rem);
+  font-size: 0.85rem; /* Smaller font size */
   font-weight: 500;
   color: #6c757d; /* Dark gray text color */
   display: flex;
   align-items: center;
-  gap: 0.5vw;
+  gap: 6px; /* Fixed gap instead of viewport-based */
   transition: color 0.2s ease;
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
 .pagination-btn:hover {
