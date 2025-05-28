@@ -93,10 +93,16 @@
       <div class="content-wrapper">
         <!-- Editor Area -->
         <div class="editor-area">
-          <div class="editor-content">
-            <h1>Untitled Chapter</h1>
-            <p>Start writing your thoughts here...</p>
-            <!-- This is where the actual text editor would go -->
+          <div class="editor-content" :class="{ 'double-page': isDoublePage }">
+            <div class="page">
+              <h1>Untitled Chapter</h1>
+              <p>Start writing your thoughts here...</p>
+              <!-- This is where the actual text editor would go -->
+            </div>
+            <div class="page" v-if="isDoublePage">
+              <h1>Page 2</h1>
+              <p>Continue writing here...</p>
+            </div>
           </div>
         </div>
 
@@ -510,19 +516,39 @@
 
 .editor-content {
   background-color: #fff;
-  padding: 6vh 8vh;
   border: 1px solid #e0e0e0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  width: 90vh; /* A4 width based on height */
-  min-height: 127.26vh; /* A4 height (90vh * 1.414) */
   margin: 2vh auto;
   box-sizing: border-box;
   position: relative;
   background: white;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   transform-origin: top center;
   overflow-y: auto;
-  transition: transform 0.2s ease;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0;
+  width: 90vh; /* Default width for single page */
+  min-height: 127.26vh; /* A4 height (90vh * 1.414) */
+}
+
+.editor-content.double-page {
+  width: 180vh; /* Double the width for two pages */
+  flex-direction: row;
+  justify-content: center;
+  gap: 40px;
+  padding: 20px 0;
+}
+
+.editor-content .page {
+  width: 100%;
+  height: 100%;
+  padding: 6vh 8vh;
+  box-sizing: border-box;
+  background: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  min-height: 123.26vh; /* Slightly less to account for padding */
 }
 
 @media (max-width: 1200px) {
