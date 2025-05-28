@@ -548,16 +548,15 @@
 
 /* Bottom Navigation */
 .bottom-nav-bar {
-  height: 10vh;
-  min-height: 80px;
-  max-height: 100px;
+  min-height: 60px;
   background-color: #ffffff;
   border-top: 1px solid #e0e0e0;
   display: flex;
   align-items: center;
-  padding: 0 4vw;
+  padding: 10px 4vw 15px;
   box-sizing: border-box;
   width: 100%;
+  color: #6c757d; /* Dark gray text color */
 }
 
 .bottom-nav-bar .nav-section {
@@ -589,30 +588,28 @@
 
 .page-indicator {
   font-size: 0.95rem;
-  color: #555;
+  color: #6c757d; /* Dark gray text color */
   font-weight: 500;
 }
 
 .pagination-btn {
-  padding: 0.8vh 2vw;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
   cursor: pointer;
-  font-size: clamp(0.85rem, 1.2vw, 1rem);
+  font-size: clamp(0.9rem, 1.2vw, 1.1rem);
+  font-weight: 500;
+  color: #6c757d; /* Dark gray text color */
   display: flex;
   align-items: center;
-  gap: 0.8vw;
-  transition: all 0.2s;
-  height: 4.5vh;
-  min-height: 36px;
-  max-height: 44px;
+  gap: 0.5vw;
+  transition: color 0.2s ease;
 }
 
 .pagination-btn:hover {
-  background-color: #e9ecef;
-  border-color: #ced4da;
-  transform: translateY(-1px);
+  color: #E9184C;
+  transform: none;
+  background: transparent;
 }
 
 .icon-arrow-left,
@@ -629,11 +626,11 @@
 }
 
 .icon-arrow-left {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15 19l-7-7 7-7' /%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236c757d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15 19l-7-7 7-7' /%3E%3C/svg%3E");
 }
 
 .icon-arrow-right {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 5l7 7-7 7' /%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236c757d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 5l7 7-7 7' /%3E%3C/svg%3E");
 }
 
 /* Right Toolbar */
