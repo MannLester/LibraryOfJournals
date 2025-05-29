@@ -129,17 +129,35 @@
         <div class="editor-area">
           <div class="editor-content" :class="{ 'double-page': isDoublePage }">
             <div class="page">
-              <div class="page-title" contenteditable="true">
-                <h1>Untitled Chapter</h1>
-              </div>
-              <div class="page-content" contenteditable="true">
-                <p>Start writing your thoughts here...</p>
-              </div>
+              <div 
+                class="page-title" 
+                ref="titleElement"
+                contenteditable="true"
+                data-placeholder="Untitled Chapter"
+                @input="handleTitleInput"
+                @keyup="handleTitleInput"
+                @paste="handleTitleInput"
+              ></div>
+              <div 
+                class="page-content" 
+                ref="firstPageElement"
+                contenteditable="true"
+                data-placeholder="Start writing here..."
+                @input="handleFirstPageInput"
+                @keyup="handleFirstPageInput"
+                @paste="handleFirstPageInput"
+              ></div>
             </div>
             <div class="page" v-if="isDoublePage">
-              <div class="page-content" contenteditable="true">
-                <p>Continue writing here...</p>
-              </div>
+              <div 
+                class="page-content" 
+                ref="secondPageElement"
+                contenteditable="true"
+                data-placeholder="Continue writing here..."
+                @input="handleSecondPageInput"
+                @keyup="handleSecondPageInput"
+                @paste="handleSecondPageInput"
+              ></div>
             </div>
           </div>
         </div>
@@ -707,6 +725,26 @@
   font-family: 'Caveat', cursive;
 }
 
+/* Placeholder text styling using CSS pseudo-elements */
+.page-title[contenteditable="true"]:empty:before {
+  content: attr(data-placeholder);
+  color: #999;
+  font-style: italic;
+  font-size: clamp(2rem, 3.5vw, 2.5rem);
+  font-weight: 600;
+  pointer-events: none;
+  display: block; /* This ensures the element takes up space */
+}
+
+.page-content[contenteditable="true"]:empty:before {
+  content: attr(data-placeholder);
+  color: #999;
+  font-style: italic;
+  font-size: clamp(1.6rem, 1.2vw, 1.6rem);
+  pointer-events: none;
+  display: block; /* This ensures the element takes up space */
+}
+
 .editor-content h1 {
   font-size: clamp(2rem, 3.5vw, 2.5rem);
   margin: 0 0 2vh 0;
@@ -717,6 +755,17 @@
   line-height: 1.2;
 }
 
+.page-title {
+  font-size: clamp(2rem, 3.5vw, 2.5rem);
+  margin: 0 0 2vh 0;
+  color: #333;
+  font-weight: 600;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1vh;
+  line-height: 1.2;
+  min-height: 3.5rem;
+}
+
 .editor-content p {
   font-size: clamp(1.6rem, 1.2vw, 1.6rem);
   line-height: 1.8;
@@ -724,6 +773,16 @@
   margin: 0 0 1.5vh 0;
   text-align: justify;
   font-weight: 400;
+}
+
+.page-content {
+  font-size: clamp(1.6rem, 1.2vw, 1.6rem);
+  line-height: 1.8;
+  color: #333;
+  margin: 0;
+  text-align: justify;
+  font-weight: 400;
+  min-height: 3rem;
 }
 
 /* Bottom Navigation */
@@ -926,17 +985,28 @@
 .icon-clock::before { content: "🕒"; }
 .icon-undo::before { content: "↩️"; }
 .journal-icon::before { content: "📄"; }
+
+/* Animation for zoom level */
+.zoom-changed {
+  animation: zoomPulse 0.6s ease;
+}
 </style>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 
+// Zoom state
 const zoomLevel = ref(90);
 const zoomChanged = ref(false);
 let zoomTimeout = null;
 
 // View mode state
 const isDoublePage = ref(false);
+
+// References to DOM elements
+const titleElement = ref(null);
+const firstPageElement = ref(null);
+const secondPageElement = ref(null);
 
 // Toggle view mode
 const toggleViewMode = (mode) => {
@@ -979,6 +1049,46 @@ const triggerZoomChange = () => {
   zoomTimeout = setTimeout(() => {
     zoomChanged.value = false;
   }, 600);
+};
+
+// Helper function to check if element is truly empty
+const isElementEmpty = (element) => {
+  if (!element) return true;
+  
+  const text = element.textContent || element.innerText || '';
+  const trimmedText = text.trim();
+  
+  // Check if it's empty or only contains whitespace/line breaks
+  return trimmedText === '' || trimmedText === '\n' || trimmedText === '\r\n';
+};
+
+// Helper function to clean up empty elements
+const cleanupElement = (element) => {
+  if (!element) return;
+  
+  if (isElementEmpty(element)) {
+    // Clear the element completely to trigger CSS :empty selector
+    element.innerHTML = '';
+  }
+};
+
+// Content input handlers with cleanup
+const handleTitleInput = () => {
+  nextTick(() => {
+    cleanupElement(titleElement.value);
+  });
+};
+
+const handleFirstPageInput = () => {
+  nextTick(() => {
+    cleanupElement(firstPageElement.value);
+  });
+};
+
+const handleSecondPageInput = () => {
+  nextTick(() => {
+    cleanupElement(secondPageElement.value);
+  });
 };
 
 // Initialize zoom when component is mounted
