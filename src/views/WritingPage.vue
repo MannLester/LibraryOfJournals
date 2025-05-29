@@ -128,12 +128,18 @@
         <!-- Editor Area -->
         <div class="editor-area">
           <div class="editor-content" :class="{ 'double-page': isDoublePage }">
-            <div class="page" contenteditable="true">
-              <h1>Untitled Chapter</h1>
-              <p>Start writing your thoughts here...</p>
+            <div class="page">
+              <div class="page-title" contenteditable="true">
+                <h1>Untitled Chapter</h1>
+              </div>
+              <div class="page-content" contenteditable="true">
+                <p>Start writing your thoughts here...</p>
+              </div>
             </div>
-            <div class="page" v-if="isDoublePage" contenteditable="true">
-              <p>Continue writing here...</p>
+            <div class="page" v-if="isDoublePage">
+              <div class="page-content" contenteditable="true">
+                <p>Continue writing here...</p>
+              </div>
             </div>
           </div>
         </div>
@@ -689,6 +695,11 @@
     padding: 4vh 5vw;
     margin: 2vh auto;
   }
+}
+
+/* Remove outline from editable elements when focused */
+[contenteditable="true"]:focus {
+  outline: none;
 }
 
 .editor-content h1 {
