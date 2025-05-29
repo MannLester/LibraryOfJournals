@@ -702,21 +702,28 @@
   outline: none;
 }
 
+/* Set Caveat font for all editable content */
+[contenteditable="true"] {
+  font-family: 'Caveat', cursive;
+}
+
 .editor-content h1 {
-  font-size: clamp(1.2rem, 2vw, 1.8rem);
+  font-size: clamp(2rem, 3.5vw, 2.5rem);
   margin: 0 0 2vh 0;
   color: #333;
-  font-weight: 500;
+  font-weight: 600; /* Made bolder */
   border-bottom: 1px solid #eee;
   padding-bottom: 1vh;
+  line-height: 1.2;
 }
 
 .editor-content p {
-  font-size: clamp(0.9rem, 1.1vw, 1.1rem);
+  font-size: clamp(1.6rem, 1.2vw, 1.6rem);
   line-height: 1.8;
   color: #333;
   margin: 0 0 1.5vh 0;
   text-align: justify;
+  font-weight: 400;
 }
 
 /* Bottom Navigation */
