@@ -128,12 +128,11 @@
         <!-- Editor Area -->
         <div class="editor-area">
           <div class="editor-content" :class="{ 'double-page': isDoublePage }">
-            <div class="page">
+            <div class="page" contenteditable="true">
               <h1>Untitled Chapter</h1>
               <p>Start writing your thoughts here...</p>
-              <!-- This is where the actual text editor would go -->
             </div>
-            <div class="page" v-if="isDoublePage">
+            <div class="page" v-if="isDoublePage" contenteditable="true">
               <p>Continue writing here...</p>
             </div>
           </div>
