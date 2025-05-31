@@ -124,26 +124,13 @@
         <!-- Editor Area -->
         <div class="editor-area">
           <div class="editor-content" :class="{ 'double-page': isDoublePage }">
-            <div class="page">
-              <div 
-                class="page-title" 
-                ref="titleElement"
-                contenteditable="true"
-                data-placeholder="Untitled Chapter"
-                @input="handleTitleInput"
-                @keyup="handleTitleInput"
-                @paste="handleTitleInput"
-              ></div>
-              <div 
-                class="page-content" 
-                ref="firstPageElement"
-                contenteditable="true"
-                data-placeholder="Start writing here..."
-                @input="handleFirstPageInput"
-                @keyup="handleFirstPageInput"
-                @paste="handleFirstPageInput"
-              ></div>
-            </div>
+            <ChapterPage 
+              ref="chapterPage"
+              @update:title="handleTitleInput"
+              @update:content="handleFirstPageInput"
+              @add-new-page="addNewPage"
+            />
+            
             <div class="page" v-if="isDoublePage">
               <div 
                 class="page-content" 
@@ -194,7 +181,6 @@
     </div>
   </div>
 </template>
-
 
 <style scoped>
 .writing-page-container {
@@ -1032,7 +1018,8 @@
 </style>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted } from 'vue';
+import ChapterPage from '../components/ChapterPage.vue';
 
 // Zoom state
 const zoomLevel = ref(90);
@@ -1043,8 +1030,7 @@ let zoomTimeout = null;
 const isDoublePage = ref(false);
 
 // References to DOM elements
-const titleElement = ref(null);
-const firstPageElement = ref(null);
+const chapterPage = ref(null);
 const secondPageElement = ref(null);
 
 // Toggle view mode
@@ -1112,22 +1098,24 @@ const cleanupElement = (element) => {
 };
 
 // Content input handlers with cleanup
-const handleTitleInput = () => {
-  nextTick(() => {
-    cleanupElement(titleElement.value);
-  });
+const handleTitleInput = (title) => {
+  // Update your state here if needed
+  console.log('Title updated:', title);
 };
 
-const handleFirstPageInput = () => {
-  nextTick(() => {
-    cleanupElement(firstPageElement.value);
-  });
+const handleFirstPageInput = (content) => {
+  // Update your state here if needed
+  console.log('Content updated:', content);
 };
 
 const handleSecondPageInput = () => {
-  nextTick(() => {
-    cleanupElement(secondPageElement.value);
-  });
+  cleanupElement(secondPageElement.value);
+  // Update your state here if needed
+};
+
+const addNewPage = () => {
+  // Handle adding a new page
+  console.log('Add new page requested');
 };
 
 // Initialize zoom when component is mounted
