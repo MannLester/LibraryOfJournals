@@ -73,29 +73,7 @@
         
         <div class="scrollable-content">
           <div class="chapter-list">
-            <!-- Placeholder for chapter items -->
-            <div class="journal-item">
-              <span class="journal-icon"></span>
-              <div class="journal-details">
-                <p class="journal-title">Morning Reflections</p>
-                <p class="journal-meta">Today - 24 pages</p>
-              </div>
-            </div>
-            <div class="journal-item">
-              <span class="journal-icon"></span>
-              <div class="journal-details">
-                <p class="journal-title">Travel Memories: V...</p>
-                <p class="journal-meta">Yesterday - 15 pages</p>
-              </div>
-            </div>
-            <!-- Additional example items to demonstrate scrolling -->
-            <div class="journal-item" v-for="i in 10" :key="'item-'+i">
-              <span class="journal-icon"></span>
-              <div class="journal-details">
-                <p class="journal-title">Chapter {{ i + 2 }}</p>
-                <p class="journal-meta">2 days ago - 10 pages</p>
-              </div>
-            </div>
+            <!-- Chapter items will be added here -->
           </div>
         </div>
         
