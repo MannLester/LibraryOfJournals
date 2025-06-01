@@ -90,8 +90,6 @@
                 <p class="chapter-meta">Click to edit</p>
               </div>
             </div>
-            
-            <!-- Chapters will be listed here -->
           </div>
         </div>
         
@@ -124,24 +122,30 @@
         <!-- Editor Area -->
         <div class="editor-area">
           <div class="editor-content" :class="{ 'double-page': isDoublePage }">
-            <ChapterPage 
-              ref="chapterPage"
-              @update:title="handleTitleInput"
-              @update:content="handleFirstPageInput"
-              @add-new-page="addNewPage"
+            <!-- Chapter Page (First Page) -->
+            <ChapterPage
+              v-if="pages.length > 0"
+              :page="pages[0]"
+              :pageIndex="0"
+              @update:title="updatePageTitle"
+              @update:content="updatePageContent"
+              @content-overflow="handleContentOverflow"
+              @focus-next-page="focusNextPage"
+              ref="chapterPageRef"
             />
             
-            <div class="page" v-if="isDoublePage">
-              <div 
-                class="page-content" 
-                ref="secondPageElement"
-                contenteditable="true"
-                data-placeholder="Continue writing here..."
-                @input="handleSecondPageInput"
-                @keyup="handleSecondPageInput"
-                @paste="handleSecondPageInput"
-              ></div>
-            </div>
+            <!-- Normal Pages -->
+            <NormalPage
+              v-for="(page, index) in normalPages"
+              :key="page.id"
+              :page="page"
+              :pageIndex="index + 1"
+              @update:content="updatePageContent"
+              @content-overflow="handleContentOverflow"
+              @focus-next-page="focusNextPage"
+              @focus-previous-page="focusPreviousPage"
+              :ref="el => setNormalPageRef(el, index + 1)"
+            />
           </div>
         </div>
 
@@ -153,7 +157,7 @@
             </button>
           </div>
           <div class="nav-section center-section">
-            <span class="page-indicator">Page 1 of 1</span>
+            <span class="page-indicator">Page {{ currentPage }} of {{ totalPages }}</span>
           </div>
           <div class="nav-section right-section">
             <button class="pagination-btn" title="Next page">
@@ -182,6 +186,191 @@
   </div>
 </template>
 
+<script setup>
+import { ref, computed, onMounted, nextTick } from 'vue';
+import ChapterPage from '../components/pages/ChapterPage.vue';
+import NormalPage from '../components/pages/NormalPage.vue';
+
+// Zoom state
+const zoomLevel = ref(90);
+const zoomChanged = ref(false);
+let zoomTimeout = null;
+
+// View mode state
+const isDoublePage = ref(false);
+
+// Page management
+const pages = ref([
+  {
+    id: 1,
+    type: 'chapter',
+    title: '',
+    content: ''
+  }
+]);
+
+const currentPage = ref(1);
+
+// Component refs
+const chapterPageRef = ref(null);
+const normalPageRefs = ref({});
+
+// Computed properties
+const normalPages = computed(() => {
+  return pages.value.slice(1).filter(page => page.type === 'normal');
+});
+
+const totalPages = computed(() => {
+  return pages.value.length;
+});
+
+// Helper function to set normal page refs
+const setNormalPageRef = (el, index) => {
+  if (el) {
+    normalPageRefs.value[index] = el;
+  }
+};
+
+// Toggle view mode
+const toggleViewMode = (mode) => {
+  const wasDoublePage = isDoublePage.value;
+  isDoublePage.value = mode === 'double';
+  
+  if (!wasDoublePage && isDoublePage.value) {
+    zoomLevel.value = 90;
+    triggerZoomChange();
+  }
+};
+
+const handleZoomIn = () => {
+  if (zoomLevel.value < 150) {
+    zoomLevel.value += 10;
+    triggerZoomChange();
+  }
+};
+
+const handleZoomOut = () => {
+  if (zoomLevel.value > 50) {
+    zoomLevel.value -= 10;
+    triggerZoomChange();
+  }
+};
+
+const triggerZoomChange = () => {
+  const scale = zoomLevel.value / 100;
+  const editor = document.querySelector('.editor-content');
+  if (editor) {
+    editor.style.transform = `scale(${scale})`;
+    editor.style.transformOrigin = 'top center';
+  }
+  
+  zoomChanged.value = true;
+  if (zoomTimeout) clearTimeout(zoomTimeout);
+  zoomTimeout = setTimeout(() => {
+    zoomChanged.value = false;
+  }, 600);
+};
+
+// Page content management
+const updatePageTitle = (title) => {
+  if (pages.value[0]) {
+    pages.value[0].title = title;
+  }
+};
+
+const updatePageContent = ({ index, content }) => {
+  if (pages.value[index]) {
+    pages.value[index].content = content;
+  }
+};
+
+// Handle content overflow - create new page
+const handleContentOverflow = ({ pageIndex, overflowContent, remainingContent }) => {
+  console.log('Content overflow detected:', { pageIndex, overflowContent, remainingContent });
+  
+  // Update current page with remaining content
+  if (pages.value[pageIndex]) {
+    pages.value[pageIndex].content = remainingContent;
+  }
+  
+  // Create new page with overflow content
+  const newPage = {
+    id: Date.now(),
+    type: 'normal',
+    content: overflowContent
+  };
+  
+  // Insert new page after current page
+  pages.value.splice(pageIndex + 1, 0, newPage);
+  
+  // Focus the new page after DOM update
+  nextTick(() => {
+    const newPageRef = normalPageRefs.value[pageIndex + 1];
+    if (newPageRef) {
+      newPageRef.focusContent();
+    }
+  });
+};
+
+// Navigation between pages
+const focusNextPage = (currentPageIndex) => {
+  const nextIndex = currentPageIndex + 1;
+  
+  // If next page doesn't exist, create it
+  if (nextIndex >= pages.value.length) {
+    const newPage = {
+      id: Date.now(),
+      type: 'normal',
+      content: ''
+    };
+    pages.value.push(newPage);
+  }
+  
+  // Focus next page
+  nextTick(() => {
+    if (nextIndex === 1) {
+      // First normal page
+      const firstNormalPage = normalPageRefs.value[1];
+      if (firstNormalPage) {
+        firstNormalPage.focusContent();
+      }
+    } else {
+      // Other normal pages
+      const nextPageRef = normalPageRefs.value[nextIndex];
+      if (nextPageRef) {
+        nextPageRef.focusContent();
+      }
+    }
+  });
+};
+
+const focusPreviousPage = (currentPageIndex) => {
+  const prevIndex = currentPageIndex - 1;
+  
+  if (prevIndex >= 0) {
+    nextTick(() => {
+      if (prevIndex === 0) {
+        // Chapter page
+        if (chapterPageRef.value) {
+          chapterPageRef.value.focusContent();
+        }
+      } else {
+        // Previous normal page
+        const prevPageRef = normalPageRefs.value[prevIndex];
+        if (prevPageRef) {
+          prevPageRef.focusContent();
+        }
+      }
+    });
+  }
+};
+
+// Initialize zoom when component is mounted
+onMounted(() => {
+  triggerZoomChange();
+});
+</script>
+
 <style scoped>
 .writing-page-container {
   display: flex;
@@ -197,7 +386,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  left: 280px; /* Match sidebar width */
+  left: 280px;
   height: 60px;
   background-color: #ffffff;
   border-bottom: 1px solid #e0e0e0;
@@ -237,7 +426,7 @@
 }
 
 .view-options {
-  background: #f5f5f5; /* Light gray background */
+  background: #f5f5f5;
   border-radius: 8px;
   padding: 4px;
   display: inline-flex;
@@ -247,7 +436,7 @@
 }
 
 .zoom-controls {
-  background: #f5f5f5; /* Light gray background */
+  background: #f5f5f5;
   border-radius: 8px;
   padding: 4px;
   display: inline-flex;
@@ -255,7 +444,7 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   height: 40px;
   gap: 0;
-  margin-right: 15px; /* Add some spacing between controls */
+  margin-right: 15px;
 }
 
 @keyframes zoomPulse {
@@ -272,7 +461,7 @@
   border-radius: 6px;
   cursor: pointer;
   font-size: 1rem;
-  color: #6c757d; /* Dark gray text */
+  color: #6c757d;
   transition: color 0.2s ease;
   display: flex;
   align-items: center;
@@ -281,7 +470,7 @@
 }
 
 .zoom-btn:hover {
-  color: #E9184C; /* Red color on hover */
+  color: #E9184C;
 }
 
 .zoom-percent {
@@ -293,14 +482,14 @@
 }
 
 .mode-toggle {
-  background: #f5f5f5; /* Light gray background */
+  background: #f5f5f5;
   border-radius: 8px;
   padding: 4px;
   display: inline-flex;
   align-items: center;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   height: 40px;
-  gap: 0; /* Remove gap since we're using padding */
+  gap: 0;
 }
 
 .view-toggle-btn {
@@ -312,7 +501,7 @@
   font-size: 0.9rem;
   font-weight: 500;
   background: transparent;
-  color: #6c757d; /* Dark gray for inactive text */
+  color: #6c757d;
   transition: all 0.2s ease;
   white-space: nowrap;
 }
@@ -337,7 +526,7 @@
   font-size: 0.9rem;
   font-weight: 500;
   background: transparent;
-  color: #6c757d; /* Dark gray for inactive text */
+  color: #6c757d;
   transition: all 0.2s ease;
   white-space: nowrap;
 }
@@ -358,8 +547,8 @@
   flex-grow: 1;
   overflow: hidden;
   position: relative;
-  margin-top: 60px; /* Account for fixed header */
-  margin-left: 280px; /* Match sidebar width */
+  margin-top: 60px;
+  margin-left: 280px;
   width: calc(100% - 280px);
 }
 
@@ -603,69 +792,6 @@
   margin: 0;
 }
 
-.journal-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 20px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  border-radius: 6px;
-  margin: 0 10px 5px;
-}
-
-.journal-item:hover {
-  background-color: #f0f0f0;
-}
-
-.journal-icon {
-  margin-right: 12px;
-  font-size: 1.2rem;
-  color: #666;
-}
-
-.journal-details {
-  flex-grow: 1;
-  min-width: 0;
-}
-
-.journal-title {
-  font-weight: 500;
-  margin: 0 0 3px 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.journal-meta {
-  font-size: 0.75rem;
-  color: #777;
-  margin: 0;
-}
-
-.settings-btn {
-  padding: 10px 12px;
-  background: none;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  font-size: 0.9rem;
-  color: #444;
-  transition: background-color 0.2s;
-}
-
-.settings-btn:hover {
-  background-color: #f0f0f0;
-}
-
-.icon-settings {
-  margin-right: 8px;
-  font-size: 1.1rem;
-}
-
 .content-wrapper {
   display: flex;
   flex-direction: column;
@@ -697,31 +823,24 @@
   background: white;
   transform-origin: top center;
   overflow-y: auto;
+  overflow-x: hidden; /* Add this line */
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   gap: 20px;
   padding: 0;
-  width: 90vh; /* Default width for single page */
-  min-height: 127.26vh; /* A4 height (90vh * 1.414) */
+  width: 90vh;
+  min-height: 127.26vh;
+  max-width: 100%; /* Add this line */
 }
 
 .editor-content.double-page {
-  width: 180vh; /* Double the width for two pages */
+  width: 180vh;
+  max-width: calc(100vw - 320px); /* Add this line - account for sidebar width */
   flex-direction: row;
   justify-content: center;
   gap: 40px;
   padding: 20px 0;
-}
-
-.editor-content .page {
-  width: 100%;
-  height: 100%;
-  padding: 6vh 8vh;
-  box-sizing: border-box;
-  background: white;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  min-height: 123.26vh; /* Slightly less to account for padding */
 }
 
 @media (max-width: 1200px) {
@@ -733,81 +852,11 @@
 @media (max-width: 768px) {
   .editor-content {
     width: 90vw;
-    height: calc(90vw * 1.414); /* A4 aspect ratio */
+    height: calc(90vw * 1.414);
     transform: none;
     padding: 4vh 5vw;
     margin: 2vh auto;
   }
-}
-
-/* Remove outline from editable elements when focused */
-[contenteditable="true"]:focus {
-  outline: none;
-}
-
-/* Set Caveat font for all editable content */
-[contenteditable="true"] {
-  font-family: 'Caveat', cursive;
-}
-
-/* Placeholder text styling using CSS pseudo-elements */
-.page-title[contenteditable="true"]:empty:before {
-  content: attr(data-placeholder);
-  color: #999;
-  font-style: italic;
-  font-size: clamp(2rem, 3.5vw, 2.5rem);
-  font-weight: 600;
-  pointer-events: none;
-  display: block; /* This ensures the element takes up space */
-}
-
-.page-content[contenteditable="true"]:empty:before {
-  content: attr(data-placeholder);
-  color: #999;
-  font-style: italic;
-  font-size: clamp(1.6rem, 1.2vw, 1.6rem);
-  pointer-events: none;
-  display: block; /* This ensures the element takes up space */
-}
-
-.editor-content h1 {
-  font-size: clamp(2rem, 3.5vw, 2.5rem);
-  margin: 0 0 2vh 0;
-  color: #333;
-  font-weight: 600; /* Made bolder */
-  border-bottom: 1px solid #eee;
-  padding-bottom: 1vh;
-  line-height: 1.2;
-}
-
-.page-title {
-  font-size: clamp(2rem, 3.5vw, 2.5rem);
-  margin: 0 0 2vh 0;
-  color: #333;
-  font-weight: 600;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 1vh;
-  line-height: 1.2;
-  min-height: 3.5rem;
-}
-
-.editor-content p {
-  font-size: clamp(1.6rem, 1.2vw, 1.6rem);
-  line-height: 1.8;
-  color: #333;
-  margin: 0 0 1.5vh 0;
-  text-align: justify;
-  font-weight: 400;
-}
-
-.page-content {
-  font-size: clamp(1.6rem, 1.2vw, 1.6rem);
-  line-height: 1.8;
-  color: #333;
-  margin: 0;
-  text-align: justify;
-  font-weight: 400;
-  min-height: 3rem;
 }
 
 /* Bottom Navigation */
@@ -820,8 +869,8 @@
   padding: 8px 20px 12px;
   box-sizing: border-box;
   width: 100%;
-  color: #6c757d; /* Dark gray text color */
-  font-size: 0.9rem; /* Slightly smaller font */
+  color: #6c757d;
+  font-size: 0.9rem;
 }
 
 .bottom-nav-bar .nav-section {
@@ -849,15 +898,9 @@
   text-align: right;
 }
 
-.page-controls {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
 .page-indicator {
   font-size: 0.95rem;
-  color: #6c757d; /* Dark gray text color */
+  color: #6c757d;
   font-weight: 500;
 }
 
@@ -866,14 +909,14 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 0.85rem; /* Smaller font size */
+  font-size: 0.85rem;
   font-weight: 500;
-  color: #6c757d; /* Dark gray text color */
+  color: #6c757d;
   display: flex;
   align-items: center;
-  gap: 6px; /* Fixed gap instead of viewport-based */
+  gap: 6px;
   transition: color 0.2s ease;
-  white-space: nowrap; /* Prevent text wrapping */
+  white-space: nowrap;
 }
 
 .pagination-btn:hover {
@@ -901,51 +944,6 @@
 
 .icon-arrow-right {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236c757d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 5l7 7-7 7' /%3E%3C/svg%3E");
-}
-
-/* Right Toolbar */
-.right-toolbar {
-  width: 60px;
-  background-color: #f7f7f7;
-  border-left: 1px solid #e0e0e0;
-  padding: 20px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: calc(100vh - 60px);
-  box-sizing: border-box;
-  position: fixed;
-  right: 0;
-  top: 60px;
-  z-index: 5;
-}
-
-.toolbar-btn {
-  width: 40px;
-  height: 40px;
-  margin-bottom: 15px;
-  border: 1px solid #ddd;
-  border-radius: 50%;
-  background-color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.toolbar-btn:hover {
-  background-color: #f0f0f0;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.toolbar-btn .icon-save,
-.toolbar-btn .icon-mic,
-.toolbar-btn .icon-clock,
-.toolbar-btn .icon-undo {
-  font-size: 1.2rem;
-  color: #555;
 }
 
 /* Floating Action Buttons */
@@ -988,138 +986,31 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
-  .floating-actions {
-    bottom: 15vh;
-    right: 3vw;
+  @media (max-width: 768px) {
+    .floating-actions {
+      bottom: 15vh;
+      right: 3vw;
+    }
+    
+    .fab {
+      width: 44px;
+      height: 44px;
+      font-size: 1.1rem;
+    }
   }
-  
-  .fab {
-    width: 44px;
-    height: 44px;
-    font-size: 1.1rem;
+
+  /* Icons */
+  .icon-home::before { content: "🏠"; }
+  .icon-plus::before { content: "+"; font-weight: bold; }
+  .icon-settings::before { content: "⚙️"; }
+  .icon-save::before { content: "💾"; }
+  .icon-mic::before { content: "🎤"; }
+  .icon-clock::before { content: "🕒"; }
+  .icon-undo::before { content: "↩️"; }
+  .journal-icon::before { content: "📄"; }
+
+  /* Animation for zoom level */
+  .zoom-changed {
+    animation: zoomPulse 0.6s ease;
   }
-}
-
-/* Icons */
-.icon-home::before { content: "🏠"; }
-.icon-plus::before { content: "+"; font-weight: bold; }
-.icon-settings::before { content: "⚙️"; }
-.icon-save::before { content: "💾"; }
-.icon-mic::before { content: "🎤"; }
-.icon-clock::before { content: "🕒"; }
-.icon-undo::before { content: "↩️"; }
-.journal-icon::before { content: "📄"; }
-
-/* Animation for zoom level */
-.zoom-changed {
-  animation: zoomPulse 0.6s ease;
-}
 </style>
-
-<script setup>
-import { ref, onMounted } from 'vue';
-import ChapterPage from '../components/ChapterPage.vue';
-
-// Zoom state
-const zoomLevel = ref(90);
-const zoomChanged = ref(false);
-let zoomTimeout = null;
-
-// View mode state
-const isDoublePage = ref(false);
-
-// References to DOM elements
-const chapterPage = ref(null);
-const secondPageElement = ref(null);
-
-// Toggle view mode
-const toggleViewMode = (mode) => {
-  const wasDoublePage = isDoublePage.value;
-  isDoublePage.value = mode === 'double';
-  
-  // Set zoom to 90% when switching to double page
-  if (!wasDoublePage && isDoublePage.value) {
-    zoomLevel.value = 90;
-    triggerZoomChange();
-  }
-};
-
-const handleZoomIn = () => {
-  if (zoomLevel.value < 150) {
-    zoomLevel.value += 10;
-    triggerZoomChange();
-  }
-};
-
-const handleZoomOut = () => {
-  if (zoomLevel.value > 50) {
-    zoomLevel.value -= 10;
-    triggerZoomChange();
-  }
-};
-
-const triggerZoomChange = () => {
-  // Apply the zoom to the editor content
-  const scale = zoomLevel.value / 100;
-  const editor = document.querySelector('.editor-content');
-  if (editor) {
-    editor.style.transform = `scale(${scale})`;
-    editor.style.transformOrigin = 'top center';
-  }
-  
-  // Trigger the animation
-  zoomChanged.value = true;
-  if (zoomTimeout) clearTimeout(zoomTimeout);
-  zoomTimeout = setTimeout(() => {
-    zoomChanged.value = false;
-  }, 600);
-};
-
-// Helper function to check if element is truly empty
-const isElementEmpty = (element) => {
-  if (!element) return true;
-  
-  const text = element.textContent || element.innerText || '';
-  const trimmedText = text.trim();
-  
-  // Check if it's empty or only contains whitespace/line breaks
-  return trimmedText === '' || trimmedText === '\n' || trimmedText === '\r\n';
-};
-
-// Helper function to clean up empty elements
-const cleanupElement = (element) => {
-  if (!element) return;
-  
-  if (isElementEmpty(element)) {
-    // Clear the element completely to trigger CSS :empty selector
-    element.innerHTML = '';
-  }
-};
-
-// Content input handlers with cleanup
-const handleTitleInput = (title) => {
-  // Update your state here if needed
-  console.log('Title updated:', title);
-};
-
-const handleFirstPageInput = (content) => {
-  // Update your state here if needed
-  console.log('Content updated:', content);
-};
-
-const handleSecondPageInput = () => {
-  cleanupElement(secondPageElement.value);
-  // Update your state here if needed
-};
-
-const addNewPage = () => {
-  // Handle adding a new page
-  console.log('Add new page requested');
-};
-
-// Initialize zoom when component is mounted
-onMounted(() => {
-  triggerZoomChange();
-});
-</script>
