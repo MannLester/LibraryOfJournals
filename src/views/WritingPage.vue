@@ -131,6 +131,7 @@
               @update:content="updatePageContent"
               @create-next-page="handleCreateNextPage"
               @push-overflow-to-next-page="handlePushOverflow"
+              @focus-next-page="handleFocusNextPage"
               ref="chapterPageRef"
             />
             
@@ -143,6 +144,7 @@
               @update:content="updatePageContent"
               @create-next-page="handleCreateNextPage"
               @push-overflow-to-next-page="handlePushOverflow"
+              @focus-next-page="handleFocusNextPage"
               @delete-current-page="handleDeletePage"
               :ref="el => setNormalPageRef(el, index + 1)"
             />
@@ -190,6 +192,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue';
 import ChapterPage from '../components/pages/ChapterPage.vue';
 import NormalPage from '../components/pages/NormalPage.vue';
+import { defineEmits } from 'vue';
 
 // Zoom state
 const zoomLevel = ref(90);
@@ -369,6 +372,34 @@ const goToHome = () => {
 onMounted(() => {
   triggerZoomChange();
 });
+
+const emit = defineEmits([
+  'update:title',
+  'update:content',
+  'create-next-page',
+  'push-overflow-to-next-page',
+  'focus-next-page' // Add this new event
+]);
+
+// NEW: Handle focusing next page when cursor moves to overflow content
+const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
+  console.log(`Focusing next page ${nextPageIndex} at offset ${cursorOffset}`);
+  
+  nextTick(() => {
+    if (nextPageIndex === 0) {
+      // Focus chapter page
+      if (chapterPageRef.value) {
+        chapterPageRef.value.focusAtPosition(cursorOffset);
+      }
+    } else {
+      // Focus normal page
+      const nextPageRef = normalPageRefs.value[nextPageIndex];
+      if (nextPageRef) {
+        nextPageRef.focusAtPosition(cursorOffset);
+      }
+    }
+  });
+};
 </script>
 
 <style scoped>

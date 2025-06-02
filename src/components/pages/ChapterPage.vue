@@ -38,7 +38,8 @@ const emit = defineEmits([
   'update:title',
   'update:content',
   'create-next-page',
-  'push-overflow-to-next-page' // New event for pushing content to existing page
+  'push-overflow-to-next-page', // New event for pushing content to existing page
+  'focus-next-page'
 ]);
 
 const pageElement = ref(null);
@@ -204,7 +205,7 @@ const handleOverflow = () => {
     
     // Restore cursor position if it was in the content that remains on this page
     if (cursorPosition <= splitPoint) {
-      // Cursor was in content that stays on this page
+      // Cursor was in content that stays on this page - restore position
       nextTick(() => {
         // Focus the element first
         contentElement.value.focus();
@@ -267,6 +268,17 @@ const handleOverflow = () => {
           // Fallback: focus at end
           focusContentAtEnd();
         }
+      });
+    } else {
+      // Cursor was in content that moved to next page - focus next page
+      console.log('Cursor was in moved content, focusing next page');
+      nextTick(() => {
+        // Emit event to focus the next page at the beginning
+        emit('focus-next-page', {
+          pageIndex: props.pageIndex,
+          nextPageIndex: props.pageIndex + 1,
+          cursorOffset: cursorPosition - splitPoint
+        });
       });
     }
   }
@@ -440,7 +452,8 @@ defineExpose({
     if (!contentElement.value) return;
     
     const currentContent = contentElement.value.textContent || '';
-    contentElement.value.textContent = contentToPrepend + ' ' + currentContent;
+    // Remove the extra space that was causing spacing issues
+    contentElement.value.textContent = contentToPrepend + currentContent;
     
     // Check for overflow after prepending
     setTimeout(() => {
@@ -448,6 +461,44 @@ defineExpose({
     }, 10);
     
     return contentElement.value.textContent;
+  },
+
+  focusAtPosition: (position) => {
+    if (!contentElement.value) return;
+    
+    contentElement.value.focus();
+    
+    // Find the text node and offset for the given position
+    const walker = document.createTreeWalker(
+      contentElement.value,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
+    
+    let textOffset = 0;
+    let targetNode = null;
+    let targetOffset = 0;
+    let node;
+    
+    while (node = walker.nextNode()) {
+      const nodeLength = node.textContent.length;
+      if (textOffset + nodeLength >= position) {
+        targetNode = node;
+        targetOffset = position - textOffset;
+        break;
+      }
+      textOffset += nodeLength;
+    }
+    
+    if (targetNode) {
+      const range = document.createRange();
+      const selection = window.getSelection();
+      range.setStart(targetNode, targetOffset);
+      range.setEnd(targetNode, targetOffset);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
   }
 });
 </script>
