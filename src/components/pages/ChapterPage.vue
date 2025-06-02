@@ -287,12 +287,38 @@ defineExpose({
     if (contentElement.value) {
       contentElement.value.focus();
       
-      const range = document.createRange();
-      const selection = window.getSelection();
-      range.selectNodeContents(contentElement.value);
-      range.collapse(false);
-      selection.removeAllRanges();
-      selection.addRange(range);
+      // Ensure there's content to position cursor after
+      if (contentElement.value.textContent.length > 0) {
+        // Move cursor to end of text content
+        const range = document.createRange();
+        const selection = window.getSelection();
+        
+        // Find the last text node
+        const walker = document.createTreeWalker(
+          contentElement.value,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+        
+        let lastTextNode = null;
+        let node;
+        while (node = walker.nextNode()) {
+          lastTextNode = node;
+        }
+        
+        if (lastTextNode) {
+          range.setStart(lastTextNode, lastTextNode.textContent.length);
+          range.setEnd(lastTextNode, lastTextNode.textContent.length);
+        } else {
+          // Fallback: position at end of element
+          range.selectNodeContents(contentElement.value);
+          range.collapse(false);
+        }
+        
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
       
       contentElement.value.scrollIntoView({ 
         behavior: 'smooth', 

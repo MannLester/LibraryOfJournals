@@ -297,7 +297,7 @@ const handleCreateNextPage = ({ pageIndex, overflowContent }) => {
   nextTick(() => {
     const newPageRef = normalPageRefs.value[pageIndex + 1];
     if (newPageRef) {
-      newPageRef.focusAtStart();
+      newPageRef.focusAtEnd();
     }
   });
 };
