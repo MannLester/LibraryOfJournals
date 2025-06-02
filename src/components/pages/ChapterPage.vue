@@ -273,7 +273,7 @@ defineExpose({
   line-height: 1.8;
   color: #333;
   margin: 0;
-  text-align: justify;
+  text-align: left;
   font-weight: 400;
   min-height: 3rem;
   outline: none;

@@ -5,8 +5,10 @@
       contenteditable="true"
       data-placeholder="Continue writing..."
       @input="handleContentInput"
+      @keydown="handleContentKeydown"
       @keyup="handleContentKeyup"
       @paste="handleContentInput"
+      @click="handleContentClick"
       ref="contentElement"
     ></div>
   </div>
@@ -30,11 +32,14 @@ const emit = defineEmits([
   'update:content',
   'content-overflow',
   'focus-next-page',
-  'focus-previous-page'
+  'focus-previous-page',
+  'delete-page' // For page deletion
 ]);
 
 const pageElement = ref(null);
 const contentElement = ref(null);
+const isBackspacePressed = ref(false);
+const isPageFull = ref(false);
 
 // Page height constants (in pixels) - same as ChapterPage
 const PAGE_HEIGHT = 1123; // A4 height at 96 DPI
@@ -70,9 +75,17 @@ watch(() => props.page.content, (newContent) => {
   }
 }, { deep: true });
 
-// Helper function to check if element is truly empty
+// Helper function to check if element is truly empty - improved version
 const isElementEmpty = (element) => {
   if (!element) return true;
+  
+  // Check innerHTML first - fastest way to detect truly empty content
+  if (!element.innerHTML || element.innerHTML === '' || 
+      element.innerHTML === '<br>' || element.innerHTML === '<div><br></div>') {
+    return true;
+  }
+  
+  // Then check text content as a fallback
   const text = element.textContent || element.innerText || '';
   const trimmedText = text.trim();
   return trimmedText === '' || trimmedText === '\n' || trimmedText === '\r\n';
@@ -87,12 +100,29 @@ const cleanupElement = (element) => {
   }
 };
 
+// NEW: Handle content click to check if page is full
+const handleContentClick = (event) => {
+  // Check if the page is full
+  if (isPageFull.value) {
+    // If the page is full, prevent editing and move to the next page
+    event.preventDefault();
+    emit('focus-next-page', props.pageIndex);
+  }
+};
+
 // Check for content overflow
 const checkContentOverflow = () => {
+  // Don't check for overflow if we're handling a backspace deletion
+  if (isBackspacePressed.value) return;
+  
   if (!contentElement.value) return;
   
   const contentHeight = contentElement.value.scrollHeight;
   const clientHeight = contentElement.value.clientHeight;
+  
+  // Check if the page is full (at or near capacity)
+  isPageFull.value = contentHeight >= AVAILABLE_CONTENT_HEIGHT * 0.98 || 
+                     contentHeight >= clientHeight * 0.98;
   
   // Use a more aggressive threshold for overflow detection
   if (contentHeight > AVAILABLE_CONTENT_HEIGHT || contentHeight > clientHeight) {
@@ -159,7 +189,72 @@ const findSplitPoint = (text, maxHeight) => {
   return splitPoint;
 };
 
+// Check if cursor is at the start of content - improved version
+const isAtStartOfContent = () => {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return false;
+  
+  const range = selection.getRangeAt(0);
+  const element = contentElement.value;
+  
+  // Check if both start and end offsets are 0
+  return range.startOffset === 0 && 
+         range.endOffset === 0 && 
+         range.startContainer === element.firstChild || 
+         (range.startContainer === element && element.childNodes.length === 0);
+};
+
+// Handle keydown events (before the key action is processed)
+const handleContentKeydown = (event) => {
+  // If the page is full and the key would add content, prevent it and move to next page
+  if (isPageFull.value && 
+      !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Backspace', 'Delete', 'Home', 'End'].includes(event.key) &&
+      !event.ctrlKey && !event.metaKey) {
+    console.log('Page is full, redirecting input to next page');
+    event.preventDefault();
+    emit('focus-next-page', props.pageIndex);
+    return;
+  }
+  
+  // Handle backspace on empty page
+  if (event.key === 'Backspace') {
+    console.log('Backspace pressed, checking conditions...');
+    console.log('Is page empty?', isElementEmpty(contentElement.value));
+    console.log('Is cursor at start?', isAtStartOfContent());
+    
+    // Check if the page is empty and cursor is at the start
+    if (isElementEmpty(contentElement.value) || isAtStartOfContent()) {
+      console.log('Conditions met for page deletion');
+      
+      // Only delete if this is not the first page (index > 0)
+      if (props.pageIndex > 0) {
+        console.log('Deleting page at index:', props.pageIndex);
+        
+        // Set flag to prevent overflow checks during deletion
+        isBackspacePressed.value = true;
+        
+        // Prevent default backspace behavior
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Emit delete event
+        emit('delete-page', props.pageIndex);
+        
+        // Reset flag after a short delay
+        setTimeout(() => {
+          isBackspacePressed.value = false;
+        }, 300);
+        
+        return;
+      }
+    }
+  }
+};
+
 const handleContentInput = () => {
+  // Don't process input events during backspace deletion
+  if (isBackspacePressed.value) return;
+  
   cleanupElement(contentElement.value);
   emit('update:content', { 
     index: props.pageIndex, 
@@ -172,6 +267,9 @@ const handleContentInput = () => {
 };
 
 const handleContentKeyup = (event) => {
+  // Don't process keyup events during backspace deletion
+  if (isBackspacePressed.value) return;
+  
   if (['Enter', 'Space', 'Backspace', 'Delete'].includes(event.code) || 
       event.key.length === 1) {
     checkContentOverflow();
@@ -195,18 +293,42 @@ const isAtEndOfContent = () => {
   return range.endOffset === element.textContent.length;
 };
 
-// Check if cursor is at the start of content
-const isAtStartOfContent = () => {
-  const selection = window.getSelection();
-  if (selection.rangeCount === 0) return false;
-  
-  const range = selection.getRangeAt(0);
-  
-  return range.startOffset === 0;
-};
-
 defineExpose({
-  focusContent: () => contentElement.value?.focus()
+  focusContent: () => contentElement.value?.focus(),
+  // Expose a method to position cursor at the end
+  focusContentAtEnd: () => {
+    if (!contentElement.value) return;
+    
+    contentElement.value.focus();
+    
+    // Position cursor at the end
+    const range = document.createRange();
+    const selection = window.getSelection();
+    
+    // Find the last text node
+    let lastNode = contentElement.value;
+    while (lastNode.lastChild) {
+      if (lastNode.lastChild.nodeType === Node.TEXT_NODE) {
+        lastNode = lastNode.lastChild;
+        break;
+      } else {
+        lastNode = lastNode.lastChild;
+      }
+    }
+    
+    // If we found a text node, position cursor at its end
+    if (lastNode.nodeType === Node.TEXT_NODE) {
+      range.setStart(lastNode, lastNode.textContent.length);
+      range.setEnd(lastNode, lastNode.textContent.length);
+    } else {
+      // Fallback: position at end of element
+      range.selectNodeContents(contentElement.value);
+      range.collapse(false);
+    }
+    
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
 });
 </script>
 
