@@ -29,6 +29,7 @@ const props = defineProps({
 const emit = defineEmits([
   'update:content',
   'create-next-page',
+  'push-overflow-to-next-page', // New event for pushing content to existing page
   'delete-current-page',
   'focus-previous-page'
 ]);
@@ -92,7 +93,7 @@ const isAtStart = () => {
   return range.startOffset === 0 && range.collapsed;
 };
 
-// FIXED: Check for content overflow using actual element dimensions
+// Check for content overflow using actual element dimensions
 const checkForOverflow = () => {
   if (!contentElement.value) return;
   
@@ -109,7 +110,8 @@ const checkForOverflow = () => {
   }
 };
 
-// IMPROVED: Handle content overflow by moving excess to next page
+// FIXED: Handle content overflow with "ripple effect" to existing pages
+// Modify the handleOverflow function to preserve cursor position
 const handleOverflow = () => {
   if (!contentElement.value) return;
   
@@ -118,30 +120,36 @@ const handleOverflow = () => {
   
   console.log('Handling overflow for content:', content.substring(0, 50) + '...');
   
-  // Get current cursor position
+  // Save cursor position and selection before modifying content
   const selection = window.getSelection();
   let cursorPosition = 0;
+  let selectionRange = null;
+  
   if (selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    cursorPosition = range.startOffset;
+    selectionRange = selection.getRangeAt(0).cloneRange();
     
-    // If cursor is in a text node, get the position relative to the whole content
-    if (range.startContainer.nodeType === Node.TEXT_NODE) {
-      const walker = document.createTreeWalker(
-        contentElement.value,
-        NodeFilter.SHOW_TEXT,
-        null,
-        false
-      );
+    // Get cursor position relative to the content element
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
       
-      let textOffset = 0;
-      let node;
-      while (node = walker.nextNode()) {
-        if (node === range.startContainer) {
-          cursorPosition = textOffset + range.startOffset;
-          break;
+      // If cursor is in a text node, get the position relative to the whole content
+      if (range.startContainer.nodeType === Node.TEXT_NODE) {
+        const walker = document.createTreeWalker(
+          contentElement.value,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+        
+        let textOffset = 0;
+        let node;
+        while (node = walker.nextNode()) {
+          if (node === range.startContainer) {
+            cursorPosition = textOffset + range.startOffset;
+            break;
+          }
+          textOffset += node.textContent.length;
         }
-        textOffset += node.textContent.length;
       }
     }
   }
@@ -153,11 +161,12 @@ const handleOverflow = () => {
   
   if (splitPoint > 0 && splitPoint < content.length) {
     const currentPageContent = content.substring(0, splitPoint).trim();
-    const nextPageContent = content.substring(splitPoint).trim();
+    const overflowContent = content.substring(splitPoint).trim();
     
-    console.log('Splitting content:', { currentPageContent: currentPageContent.substring(0, 30), nextPageContent: nextPageContent.substring(0, 30) });
+    console.log('Splitting content:', { currentPageContent: currentPageContent.substring(0, 30), overflowContent: overflowContent.substring(0, 30) });
     
-    // Update current page
+    // Update current page - use innerHTML instead of textContent to preserve formatting
+    const originalHTML = contentElement.value.innerHTML;
     contentElement.value.textContent = currentPageContent;
     updatePlaceholderVisibility();
     
@@ -166,16 +175,87 @@ const handleOverflow = () => {
       content: contentElement.value.innerHTML 
     });
     
-    // Create next page with overflow content
-    emit('create-next-page', {
+    // Check if next page already exists
+    const nextPageIndex = props.pageIndex + 1;
+    
+    // Emit event to push overflow to next page (parent will handle creating or updating)
+    emit('push-overflow-to-next-page', {
       pageIndex: props.pageIndex,
-      overflowContent: nextPageContent,
-      shouldFocusAtEnd: cursorPosition >= splitPoint // Focus at end if cursor was in the moved content
+      nextPageIndex: nextPageIndex,
+      overflowContent: overflowContent
     });
+    
+    // Restore cursor position if it was in the content that remains on this page
+    if (cursorPosition <= splitPoint) {
+      // Cursor was in content that stays on this page
+      nextTick(() => {
+        // Focus the element first
+        contentElement.value.focus();
+        
+        // Try to restore the exact selection if possible
+        if (selectionRange) {
+          try {
+            // Create a new range at the same position
+            const newRange = document.createRange();
+            const selection = window.getSelection();
+            
+            // Find the appropriate text node and offset
+            const walker = document.createTreeWalker(
+              contentElement.value,
+              NodeFilter.SHOW_TEXT,
+              null,
+              false
+            );
+            
+            let textOffset = 0;
+            let targetNode = null;
+            let targetOffset = 0;
+            let node;
+            
+            while (node = walker.nextNode()) {
+              const nodeLength = node.textContent.length;
+              if (textOffset + nodeLength >= cursorPosition) {
+                targetNode = node;
+                targetOffset = cursorPosition - textOffset;
+                break;
+              }
+              textOffset += nodeLength;
+            }
+            
+            // If we found a suitable node, set the selection
+            if (targetNode) {
+              newRange.setStart(targetNode, targetOffset);
+              newRange.setEnd(targetNode, targetOffset);
+              selection.removeAllRanges();
+              selection.addRange(newRange);
+              
+              // Ensure the cursor is visible
+              const rect = newRange.getBoundingClientRect();
+              if (rect) {
+                contentElement.value.scrollIntoView({
+                  behavior: 'auto',
+                  block: 'nearest'
+                });
+              }
+            } else {
+              // Fallback: position at end of content
+              focusAtEnd();
+            }
+          } catch (e) {
+            console.error('Error restoring cursor position:', e);
+            // Fallback: focus at end
+            focusAtEnd();
+          }
+        } else {
+          // Fallback: focus at end
+          focusAtEnd();
+        }
+      });
+    }
   }
 };
 
-// FIXED: Find optimal split point using actual element dimensions
+// Find optimal split point using actual element dimensions
 const findOptimalSplitPoint = (text) => {
   if (!contentElement.value) return 0;
   
@@ -197,8 +277,6 @@ const findOptimalSplitPoint = (text) => {
     // Test this content length
     element.textContent = testText;
     const testHeight = element.scrollHeight;
-    
-    console.log('Testing split at', mid, 'height:', testHeight, 'vs max:', maxHeight);
     
     if (testHeight <= maxHeight) {
       bestSplit = mid;
@@ -341,6 +419,21 @@ defineExpose({
       selection.removeAllRanges();
       selection.addRange(range);
     }
+  },
+  
+  // New method to prepend content and check for overflow
+  prependContent: (contentToPrepend) => {
+    if (!contentElement.value) return;
+    
+    const currentContent = contentElement.value.textContent || '';
+    contentElement.value.textContent = contentToPrepend + ' ' + currentContent;
+    
+    // Check for overflow after prepending
+    setTimeout(() => {
+      checkForOverflow();
+    }, 10);
+    
+    return contentElement.value.textContent;
   }
 });
 </script>
@@ -378,7 +471,7 @@ defineExpose({
   unicode-bidi: normal;
 }
 
-/* FIXED: Better placeholder handling */
+/* Better placeholder handling */
 .page-content:empty::before,
 .page-content.empty::before {
   content: attr(data-placeholder);

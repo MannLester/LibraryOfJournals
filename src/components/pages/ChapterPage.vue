@@ -37,7 +37,8 @@ const props = defineProps({
 const emit = defineEmits([
   'update:title',
   'update:content',
-  'create-next-page'
+  'create-next-page',
+  'push-overflow-to-next-page' // New event for pushing content to existing page
 ]);
 
 const pageElement = ref(null);
@@ -112,7 +113,7 @@ const updateContentPlaceholder = () => {
   }
 };
 
-// FIXED: Check for content overflow using actual element dimensions
+// Check for content overflow using actual element dimensions
 const checkForOverflow = () => {
   if (!contentElement.value) return;
   
@@ -128,7 +129,8 @@ const checkForOverflow = () => {
   }
 };
 
-// FIXED: Handle content overflow
+// FIXED: Handle content overflow with "ripple effect" to existing pages
+// Modify the handleOverflow function to preserve cursor position
 const handleOverflow = () => {
   if (!contentElement.value) return;
   
@@ -137,15 +139,49 @@ const handleOverflow = () => {
   
   console.log('Chapter page handling overflow for content:', content.substring(0, 50) + '...');
   
+  // Save cursor position and selection before modifying content
+  const selection = window.getSelection();
+  let cursorPosition = 0;
+  let selectionRange = null;
+  
+  if (selection.rangeCount > 0) {
+    selectionRange = selection.getRangeAt(0).cloneRange();
+    
+    // Get cursor position relative to the content element
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      
+      // If cursor is in a text node, get the position relative to the whole content
+      if (range.startContainer.nodeType === Node.TEXT_NODE) {
+        const walker = document.createTreeWalker(
+          contentElement.value,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+        
+        let textOffset = 0;
+        let node;
+        while (node = walker.nextNode()) {
+          if (node === range.startContainer) {
+            cursorPosition = textOffset + range.startOffset;
+            break;
+          }
+          textOffset += node.textContent.length;
+        }
+      }
+    }
+  }
+  
   const splitPoint = findOptimalSplitPoint(content);
   
-  console.log('Chapter page split point found:', splitPoint, 'of', content.length);
+  console.log('Chapter page split point found:', splitPoint, 'of', content.length, 'cursor at:', cursorPosition);
   
   if (splitPoint > 0 && splitPoint < content.length) {
     const currentPageContent = content.substring(0, splitPoint).trim();
-    const nextPageContent = content.substring(splitPoint).trim();
+    const overflowContent = content.substring(splitPoint).trim();
     
-    console.log('Chapter page splitting content:', { currentPageContent: currentPageContent.substring(0, 30), nextPageContent: nextPageContent.substring(0, 30) });
+    console.log('Chapter page splitting content:', { currentPageContent: currentPageContent.substring(0, 30), overflowContent: overflowContent.substring(0, 30) });
     
     // Update current page
     contentElement.value.textContent = currentPageContent;
@@ -156,15 +192,87 @@ const handleOverflow = () => {
       content: contentElement.value.innerHTML 
     });
     
-    // Create next page with overflow
-    emit('create-next-page', {
+    // Check if next page already exists
+    const nextPageIndex = props.pageIndex + 1;
+    
+    // Emit event to push overflow to next page (parent will handle creating or updating)
+    emit('push-overflow-to-next-page', {
       pageIndex: props.pageIndex,
-      overflowContent: nextPageContent
+      nextPageIndex: nextPageIndex,
+      overflowContent: overflowContent
     });
+    
+    // Restore cursor position if it was in the content that remains on this page
+    if (cursorPosition <= splitPoint) {
+      // Cursor was in content that stays on this page
+      nextTick(() => {
+        // Focus the element first
+        contentElement.value.focus();
+        
+        // Try to restore the exact selection if possible
+        if (selectionRange) {
+          try {
+            // Create a new range at the same position
+            const newRange = document.createRange();
+            const selection = window.getSelection();
+            
+            // Find the appropriate text node and offset
+            const walker = document.createTreeWalker(
+              contentElement.value,
+              NodeFilter.SHOW_TEXT,
+              null,
+              false
+            );
+            
+            let textOffset = 0;
+            let targetNode = null;
+            let targetOffset = 0;
+            let node;
+            
+            while (node = walker.nextNode()) {
+              const nodeLength = node.textContent.length;
+              if (textOffset + nodeLength >= cursorPosition) {
+                targetNode = node;
+                targetOffset = cursorPosition - textOffset;
+                break;
+              }
+              textOffset += nodeLength;
+            }
+            
+            // If we found a suitable node, set the selection
+            if (targetNode) {
+              newRange.setStart(targetNode, targetOffset);
+              newRange.setEnd(targetNode, targetOffset);
+              selection.removeAllRanges();
+              selection.addRange(newRange);
+              
+              // Ensure the cursor is visible
+              const rect = newRange.getBoundingClientRect();
+              if (rect) {
+                contentElement.value.scrollIntoView({
+                  behavior: 'auto',
+                  block: 'nearest'
+                });
+              }
+            } else {
+              // Fallback: position at end of content
+              focusContentAtEnd();
+            }
+          } catch (e) {
+            console.error('Error restoring cursor position:', e);
+            // Fallback: focus at end
+            focusContentAtEnd();
+          }
+        } else {
+          // Fallback: focus at end
+          focusContentAtEnd();
+        }
+      });
+    }
   }
 };
 
-// FIXED: Find optimal split point using actual element dimensions
+// Find optimal split point using actual element dimensions
 const findOptimalSplitPoint = (text) => {
   if (!contentElement.value) return 0;
   
@@ -325,6 +433,21 @@ defineExpose({
         block: 'center' 
       });
     }
+  },
+  
+  // New method to prepend content and check for overflow
+  prependContent: (contentToPrepend) => {
+    if (!contentElement.value) return;
+    
+    const currentContent = contentElement.value.textContent || '';
+    contentElement.value.textContent = contentToPrepend + ' ' + currentContent;
+    
+    // Check for overflow after prepending
+    setTimeout(() => {
+      checkForOverflow();
+    }, 10);
+    
+    return contentElement.value.textContent;
   }
 });
 </script>
@@ -373,7 +496,7 @@ defineExpose({
   max-height: calc(127.26vh - 6vh - 6vh - 3.5rem - 3vh);
 }
 
-/* FIXED: Better placeholder handling for both title and content */
+/* Better placeholder handling for both title and content */
 .page-title:empty::before,
 .page-title.empty::before {
   content: attr(data-placeholder);

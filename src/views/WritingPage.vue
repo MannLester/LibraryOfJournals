@@ -130,6 +130,7 @@
               @update:title="updatePageTitle"
               @update:content="updatePageContent"
               @create-next-page="handleCreateNextPage"
+              @push-overflow-to-next-page="handlePushOverflow"
               ref="chapterPageRef"
             />
             
@@ -141,6 +142,7 @@
               :pageIndex="index + 1"
               @update:content="updatePageContent"
               @create-next-page="handleCreateNextPage"
+              @push-overflow-to-next-page="handlePushOverflow"
               @delete-current-page="handleDeletePage"
               :ref="el => setNormalPageRef(el, index + 1)"
             />
@@ -279,6 +281,33 @@ const updatePageTitle = (title) => {
 const updatePageContent = ({ index, content }) => {
   if (pages.value[index]) {
     pages.value[index].content = content;
+  }
+};
+
+// NEW: Handle pushing overflow content to next page with ripple effect
+const handlePushOverflow = ({ pageIndex, nextPageIndex, overflowContent }) => {
+  console.log(`Pushing overflow from page ${pageIndex} to ${nextPageIndex}`, { overflowContent });
+  
+  // Check if next page exists
+  if (nextPageIndex < pages.value.length) {
+    // Next page exists, prepend overflow content to it
+    console.log('Next page exists, prepending content');
+    
+    const nextPageRef = nextPageIndex === 0 ? chapterPageRef.value : normalPageRefs.value[nextPageIndex];
+    
+    if (nextPageRef) {
+      // Prepend content to next page
+      nextPageRef.prependContent(overflowContent);
+      
+      // Focus will stay on current page where user is typing
+    }
+  } else {
+    // Next page doesn't exist, create it
+    console.log('Next page does not exist, creating new page');
+    handleCreateNextPage({ 
+      pageIndex, 
+      overflowContent 
+    });
   }
 };
 
