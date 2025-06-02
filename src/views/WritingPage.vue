@@ -129,8 +129,7 @@
               :pageIndex="0"
               @update:title="updatePageTitle"
               @update:content="updatePageContent"
-              @content-overflow="handleContentOverflow"
-              @focus-next-page="focusNextPage"
+              @create-next-page="handleCreateNextPage"
               ref="chapterPageRef"
             />
             
@@ -141,10 +140,8 @@
               :page="page"
               :pageIndex="index + 1"
               @update:content="updatePageContent"
-              @content-overflow="handleContentOverflow"
-              @focus-next-page="focusNextPage"
-              @focus-previous-page="focusPreviousPage"
-              @delete-page="handleDeletePage"
+              @create-next-page="handleCreateNextPage"
+              @delete-current-page="handleDeletePage"
               :ref="el => setNormalPageRef(el, index + 1)"
             />
           </div>
@@ -216,10 +213,6 @@ const currentPage = ref(1);
 const chapterPageRef = ref(null);
 const normalPageRefs = ref({});
 
-// Add this after the other refs
-const isProcessingOverflow = ref(false);
-const isProcessingDelete = ref(false);
-
 // Computed properties
 const normalPages = computed(() => {
   return pages.value.slice(1).filter(page => page.type === 'normal');
@@ -233,58 +226,6 @@ const totalPages = computed(() => {
 const setNormalPageRef = (el, index) => {
   if (el) {
     normalPageRefs.value[index] = el;
-  }
-};
-
-// Helper function to move cursor to end of element
-const moveCursorToEnd = (element) => {
-  if (!element) return;
-  
-  element.focus();
-  
-  // Use a more reliable method to move cursor to end
-  if (element.textContent.length > 0) {
-    // Method 1: Try using setSelectionRange for input-like elements
-    if (typeof element.setSelectionRange === 'function') {
-      const length = element.textContent.length;
-      element.setSelectionRange(length, length);
-    } else {
-      // Method 2: Use Selection API for contenteditable elements
-      const selection = window.getSelection();
-      const range = document.createRange();
-      
-      // Find the last text node
-      let lastNode = element;
-      while (lastNode.lastChild) {
-        if (lastNode.lastChild.nodeType === Node.TEXT_NODE) {
-          lastNode = lastNode.lastChild;
-          break;
-        } else {
-          lastNode = lastNode.lastChild;
-        }
-      }
-      
-      // If we found a text node, position cursor at its end
-      if (lastNode.nodeType === Node.TEXT_NODE) {
-        range.setStart(lastNode, lastNode.textContent.length);
-        range.setEnd(lastNode, lastNode.textContent.length);
-      } else {
-        // Fallback: position at end of element
-        range.selectNodeContents(element);
-        range.collapse(false);
-      }
-      
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-  } else {
-    // If element is empty, just focus it
-    const selection = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    range.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(range);
   }
 };
 
@@ -341,89 +282,8 @@ const updatePageContent = ({ index, content }) => {
   }
 };
 
-// IMPROVED: Handle page deletion with better cursor positioning
-const handleDeletePage = (pageIndex) => {
-  console.log('Deleting page at index:', pageIndex);
-  
-  // Set flag to prevent overflow processing during deletion
-  isProcessingDelete.value = true;
-  isProcessingOverflow.value = true;
-  
-  // Don't delete if it's the only page or the chapter page
-  if (pageIndex <= 0 || pages.value.length <= 1) {
-    isProcessingDelete.value = false;
-    isProcessingOverflow.value = false;
-    return;
-  }
-  
-  // Remove the page from the array
-  pages.value.splice(pageIndex, 1);
-  
-  // Focus the previous page
-  nextTick(() => {
-    const prevIndex = pageIndex - 1;
-    
-    if (prevIndex === 0) {
-      // Focus the chapter page content
-      if (chapterPageRef.value) {
-        // Use a longer timeout to ensure DOM is fully updated
-        setTimeout(() => {
-          // Try to access the content element directly
-          const contentElement = chapterPageRef.value.$el?.querySelector('.page-content');
-          if (contentElement) {
-            console.log('Found chapter page content element, moving cursor to end');
-            moveCursorToEnd(contentElement);
-          } else {
-            // Fallback method
-            console.log('Using fallback method for chapter page');
-            chapterPageRef.value.focusContent();
-          }
-        }, 100);
-      }
-    } else {
-      // Focus the previous normal page
-      const prevPageRef = normalPageRefs.value[prevIndex];
-      if (prevPageRef) {
-        setTimeout(() => {
-          // Try to access the content element directly
-          const contentElement = prevPageRef.$el?.querySelector('.page-content');
-          if (contentElement) {
-            console.log('Found normal page content element, moving cursor to end');
-            moveCursorToEnd(contentElement);
-          } else {
-            // Fallback method
-            console.log('Using fallback method for normal page');
-            prevPageRef.focusContent();
-          }
-        }, 100);
-      }
-    }
-    
-    // Reset the processing flags after a longer delay to prevent immediate page recreation
-    setTimeout(() => {
-      isProcessingDelete.value = false;
-      isProcessingOverflow.value = false;
-    }, 300);
-  });
-};
-
-// Handle content overflow - create new page
-const handleContentOverflow = ({ pageIndex, overflowContent, remainingContent }) => {
-  // Prevent overflow processing during deletion or if already processing
-  if (isProcessingDelete.value || isProcessingOverflow.value) {
-    return;
-  }
-  
-  isProcessingOverflow.value = true;
-  
-  console.log('Content overflow detected:', { pageIndex, overflowContent, remainingContent });
-  
-  // Update current page with remaining content
-  if (pages.value[pageIndex]) {
-    pages.value[pageIndex].content = remainingContent;
-  }
-  
-  // Create new page with overflow content
+// Handle creating next page when content overflows
+const handleCreateNextPage = ({ pageIndex, overflowContent }) => {
   const newPage = {
     id: Date.now(),
     type: 'normal',
@@ -433,71 +293,42 @@ const handleContentOverflow = ({ pageIndex, overflowContent, remainingContent })
   // Insert new page after current page
   pages.value.splice(pageIndex + 1, 0, newPage);
   
-  // Focus the new page after DOM update
+  // Focus the new page
   nextTick(() => {
     const newPageRef = normalPageRefs.value[pageIndex + 1];
     if (newPageRef) {
-      newPageRef.focusContent();
+      newPageRef.focusAtStart();
     }
-    
-    // Reset the overflow processing flag after a short delay
-    setTimeout(() => {
-      isProcessingOverflow.value = false;
-    }, 100);
   });
 };
 
-// Navigation between pages
-const focusNextPage = (currentPageIndex) => {
-  const nextIndex = currentPageIndex + 1;
-  
-  // If next page doesn't exist, create it
-  if (nextIndex >= pages.value.length) {
-    const newPage = {
-      id: Date.now(),
-      type: 'normal',
-      content: ''
-    };
-    pages.value.push(newPage);
+// Handle deleting current page
+const handleDeletePage = (pageIndex) => {
+  // Don't delete if it's the only page or the chapter page
+  if (pageIndex <= 0 || pages.value.length <= 1) {
+    return;
   }
   
-  // Focus next page
+  // Remove the page
+  pages.value.splice(pageIndex, 1);
+  
+  // Focus the previous page
   nextTick(() => {
-    if (nextIndex === 1) {
-      // First normal page
-      const firstNormalPage = normalPageRefs.value[1];
-      if (firstNormalPage) {
-        firstNormalPage.focusContent();
+    const prevIndex = pageIndex - 1;
+    
+    if (prevIndex === 0) {
+      // Focus the chapter page
+      if (chapterPageRef.value) {
+        chapterPageRef.value.focusContentAtEnd();
       }
     } else {
-      // Other normal pages
-      const nextPageRef = normalPageRefs.value[nextIndex];
-      if (nextPageRef) {
-        nextPageRef.focusContent();
+      // Focus the previous normal page
+      const prevPageRef = normalPageRefs.value[prevIndex];
+      if (prevPageRef) {
+        prevPageRef.focusAtEnd();
       }
     }
   });
-};
-
-const focusPreviousPage = (currentPageIndex) => {
-  const prevIndex = currentPageIndex - 1;
-  
-  if (prevIndex >= 0) {
-    nextTick(() => {
-      if (prevIndex === 0) {
-        // Chapter page
-        if (chapterPageRef.value) {
-          chapterPageRef.value.focusContent();
-        }
-      } else {
-        // Previous normal page
-        const prevPageRef = normalPageRefs.value[prevIndex];
-        if (prevPageRef) {
-          prevPageRef.focusContent();
-        }
-      }
-    });
-  }
 };
 
 const goToHome = () => {
@@ -964,7 +795,7 @@ onMounted(() => {
   background: white;
   transform-origin: top center;
   overflow-y: auto;
-  overflow-x: hidden; /* Add this line */
+  overflow-x: hidden;
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -972,12 +803,12 @@ onMounted(() => {
   padding: 0;
   width: 90vh;
   min-height: 127.26vh;
-  max-width: 100%; /* Add this line */
+  max-width: 100%;
 }
 
 .editor-content.double-page {
   width: 180vh;
-  max-width: calc(100vw - 320px); /* Add this line - account for sidebar width */
+  max-width: calc(100vw - 320px);
   flex-direction: row;
   justify-content: center;
   gap: 40px;
@@ -1127,31 +958,31 @@ onMounted(() => {
 }
 
 /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .floating-actions {
-      bottom: 15vh;
-      right: 3vw;
-    }
-    
-    .fab {
-      width: 44px;
-      height: 44px;
-      font-size: 1.1rem;
-    }
+@media (max-width: 768px) {
+  .floating-actions {
+    bottom: 15vh;
+    right: 3vw;
   }
-
-  /* Icons */
-  .icon-home::before { content: "🏠"; }
-  .icon-plus::before { content: "+"; font-weight: bold; }
-  .icon-settings::before { content: "⚙️"; }
-  .icon-save::before { content: "💾"; }
-  .icon-mic::before { content: "🎤"; }
-  .icon-clock::before { content: "🕒"; }
-  .icon-undo::before { content: "↩️"; }
-  .journal-icon::before { content: "📄"; }
-
-  /* Animation for zoom level */
-  .zoom-changed {
-    animation: zoomPulse 0.6s ease;
+  
+  .fab {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
   }
+}
+
+/* Icons */
+.icon-home::before { content: "🏠"; }
+.icon-plus::before { content: "+"; font-weight: bold; }
+.icon-settings::before { content: "⚙️"; }
+.icon-save::before { content: "💾"; }
+.icon-mic::before { content: "🎤"; }
+.icon-clock::before { content: "🕒"; }
+.icon-undo::before { content: "↩️"; }
+.journal-icon::before { content: "📄"; }
+
+/* Animation for zoom level */
+.zoom-changed {
+  animation: zoomPulse 0.6s ease;
+}
 </style>

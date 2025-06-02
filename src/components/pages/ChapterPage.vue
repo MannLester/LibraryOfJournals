@@ -6,8 +6,7 @@
       contenteditable="true"
       data-placeholder="Untitled Chapter"
       @input="handleTitleInput"
-      @keyup="handleTitleKeyup"
-      @paste="handleTitleInput"
+      @keydown="handleTitleKeydown"
     ></div>
     <div 
       class="page-content" 
@@ -15,8 +14,8 @@
       contenteditable="true"
       data-placeholder="Start writing here..."
       @input="handleContentInput"
-      @keyup="handleContentKeyup"
-      @paste="handleContentInput"
+      @keydown="handleContentKeydown"
+      @paste="handleContentPaste"
     ></div>
   </div>
 </template>
@@ -38,205 +37,269 @@ const props = defineProps({
 const emit = defineEmits([
   'update:title',
   'update:content',
-  'content-overflow',
-  'focus-next-page'
+  'create-next-page'
 ]);
 
 const pageElement = ref(null);
 const titleElement = ref(null);
 const contentElement = ref(null);
 
-// Page height constants (in pixels)
-// Reduced the available content height to match visual perception
-const PAGE_HEIGHT = 1123; // A4 height at 96 DPI
-const CONTENT_PADDING = 120; // Top and bottom padding
-const TITLE_HEIGHT = 80; // Approximate title height
-// Reduce the available height by a small buffer to trigger overflow earlier
-const AVAILABLE_CONTENT_HEIGHT = PAGE_HEIGHT - CONTENT_PADDING - TITLE_HEIGHT - 30; // Added 30px buffer
-
-// Focus the title when component is mounted
 onMounted(() => {
   if (titleElement.value) {
     titleElement.value.innerHTML = props.page.title || '';
-    titleElement.value.focus();
+    updateTitlePlaceholder();
   }
   if (contentElement.value) {
     contentElement.value.innerHTML = props.page.content || '';
-    // Check for overflow on initial render
+    updateContentPlaceholder();
     nextTick(() => {
-      checkContentOverflow();
+      checkForOverflow();
     });
-  }
-  
-  // Set up a resize observer to check for overflow when the window size changes
-  if (typeof ResizeObserver !== 'undefined' && contentElement.value) {
-    const resizeObserver = new ResizeObserver(() => {
-      checkContentOverflow();
-    });
-    resizeObserver.observe(contentElement.value);
   }
 });
 
-// Watch for content changes from parent
+// Watch for content changes
 watch(() => props.page.content, (newContent) => {
   if (contentElement.value && newContent !== contentElement.value.innerHTML) {
     contentElement.value.innerHTML = newContent || '';
+    updateContentPlaceholder();
     nextTick(() => {
-      checkContentOverflow();
+      checkForOverflow();
     });
   }
-}, { deep: true });
+});
 
-// Helper function to check if element is truly empty
+watch(() => props.page.title, (newTitle) => {
+  if (titleElement.value && newTitle !== titleElement.value.innerHTML) {
+    titleElement.value.innerHTML = newTitle || '';
+    updateTitlePlaceholder();
+  }
+});
+
+// Check if element is empty
 const isElementEmpty = (element) => {
   if (!element) return true;
-  const text = element.textContent || element.innerText || '';
-  const trimmedText = text.trim();
-  return trimmedText === '' || trimmedText === '\n' || trimmedText === '\r\n';
+  const text = element.textContent || '';
+  const html = element.innerHTML || '';
+  return text.trim() === '' || html.trim() === '' || html === '<br>' || html === '<div><br></div>';
 };
 
-// Helper function to clean up empty elements
-const cleanupElement = (element) => {
-  if (!element) return;
+// Update placeholder visibility for title
+const updateTitlePlaceholder = () => {
+  if (!titleElement.value) return;
   
-  if (isElementEmpty(element)) {
-    element.innerHTML = '';
+  if (isElementEmpty(titleElement.value)) {
+    titleElement.value.classList.add('empty');
+    if (titleElement.value.innerHTML.trim() !== '') {
+      titleElement.value.innerHTML = '';
+    }
+  } else {
+    titleElement.value.classList.remove('empty');
   }
 };
 
-// Check for content overflow
-const checkContentOverflow = () => {
+// Update placeholder visibility for content
+const updateContentPlaceholder = () => {
   if (!contentElement.value) return;
   
-  const contentHeight = contentElement.value.scrollHeight;
-  const clientHeight = contentElement.value.clientHeight;
+  if (isElementEmpty(contentElement.value)) {
+    contentElement.value.classList.add('empty');
+    if (contentElement.value.innerHTML.trim() !== '') {
+      contentElement.value.innerHTML = '';
+    }
+  } else {
+    contentElement.value.classList.remove('empty');
+  }
+};
+
+// FIXED: Check for content overflow using actual element dimensions
+const checkForOverflow = () => {
+  if (!contentElement.value) return;
   
-  // Use a more aggressive threshold for overflow detection
-  // This helps catch overflow before the user sees scrolling
-  if (contentHeight > AVAILABLE_CONTENT_HEIGHT || contentHeight > clientHeight) {
+  const element = contentElement.value;
+  const scrollHeight = element.scrollHeight;
+  const clientHeight = element.clientHeight;
+  
+  console.log('Chapter page checking overflow:', { scrollHeight, clientHeight, overflowing: scrollHeight > clientHeight });
+  
+  if (scrollHeight > clientHeight) {
+    console.log('Chapter page content is overflowing, handling...');
     handleOverflow();
   }
 };
 
-// Handle content overflow by splitting content
+// FIXED: Handle content overflow
 const handleOverflow = () => {
   if (!contentElement.value) return;
   
-  const content = contentElement.value.innerHTML;
-  const textContent = contentElement.value.textContent;
+  const content = contentElement.value.textContent;
+  if (!content || content.trim() === '') return;
   
-  // Find a good split point (try to split at word boundaries)
-  const splitPoint = findSplitPoint(textContent, AVAILABLE_CONTENT_HEIGHT);
+  console.log('Chapter page handling overflow for content:', content.substring(0, 50) + '...');
   
-  if (splitPoint > 0) {
-    const remainingText = textContent.substring(0, splitPoint);
-    const overflowText = textContent.substring(splitPoint);
+  const splitPoint = findOptimalSplitPoint(content);
+  
+  console.log('Chapter page split point found:', splitPoint, 'of', content.length);
+  
+  if (splitPoint > 0 && splitPoint < content.length) {
+    const currentPageContent = content.substring(0, splitPoint).trim();
+    const nextPageContent = content.substring(splitPoint).trim();
     
-    // Update current page content
-    contentElement.value.textContent = remainingText;
+    console.log('Chapter page splitting content:', { currentPageContent: currentPageContent.substring(0, 30), nextPageContent: nextPageContent.substring(0, 30) });
     
-    // Emit overflow event with the split content
-    emit('content-overflow', {
+    // Update current page
+    contentElement.value.textContent = currentPageContent;
+    updateContentPlaceholder();
+    
+    emit('update:content', { 
+      index: props.pageIndex, 
+      content: contentElement.value.innerHTML 
+    });
+    
+    // Create next page with overflow
+    emit('create-next-page', {
       pageIndex: props.pageIndex,
-      remainingContent: contentElement.value.innerHTML,
-      overflowContent: overflowText
+      overflowContent: nextPageContent
     });
   }
 };
 
-// Find optimal split point for content
-const findSplitPoint = (text, maxHeight) => {
-  // Create a temporary element to measure text height
-  const tempElement = document.createElement('div');
-  tempElement.style.cssText = `
-    position: absolute;
-    visibility: hidden;
-    width: ${contentElement.value.offsetWidth}px;
-    font-family: 'Caveat', cursive;
-    font-size: clamp(1.6rem, 1.2vw, 1.6rem);
-    line-height: 1.8;
-    padding: 0;
-    margin: 0;
-  `;
-  document.body.appendChild(tempElement);
+// FIXED: Find optimal split point using actual element dimensions
+const findOptimalSplitPoint = (text) => {
+  if (!contentElement.value) return 0;
   
-  let splitPoint = 0;
-  const words = text.split(' ');
-  let currentText = '';
+  const element = contentElement.value;
+  const originalContent = element.textContent;
+  const maxHeight = element.clientHeight;
   
-  // Use a slightly reduced height threshold to trigger overflow earlier
-  const adjustedMaxHeight = maxHeight * 0.95; // 95% of max height
+  console.log('Chapter page finding split point, maxHeight:', maxHeight);
   
-  for (let i = 0; i < words.length; i++) {
-    const testText = currentText + (currentText ? ' ' : '') + words[i];
-    tempElement.textContent = testText;
+  // Binary search for the optimal split point
+  let low = 0;
+  let high = text.length;
+  let bestSplit = 0;
+  
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const testText = text.substring(0, mid);
     
-    if (tempElement.scrollHeight > adjustedMaxHeight) {
-      break;
+    // Test this content length
+    element.textContent = testText;
+    const testHeight = element.scrollHeight;
+    
+    if (testHeight <= maxHeight) {
+      bestSplit = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
     }
-    
-    currentText = testText;
-    splitPoint = testText.length;
   }
   
-  document.body.removeChild(tempElement);
-  return splitPoint;
+  // Restore original content
+  element.textContent = originalContent;
+  
+  // Try to split at word boundary near the best split point
+  if (bestSplit > 0) {
+    const nearbySpace = text.lastIndexOf(' ', bestSplit);
+    if (nearbySpace > bestSplit * 0.8) {
+      bestSplit = nearbySpace;
+    }
+  }
+  
+  console.log('Chapter page final split point:', bestSplit);
+  return bestSplit;
 };
 
-// Content input handlers
+// Handle title input
 const handleTitleInput = () => {
-  cleanupElement(titleElement.value);
+  updateTitlePlaceholder();
   emit('update:title', titleElement.value?.innerHTML || '');
 };
 
-const handleTitleKeyup = (event) => {
+// Handle title keydown
+const handleTitleKeydown = (event) => {
   if (event.key === 'Enter') {
     event.preventDefault();
     contentElement.value?.focus();
   }
+  
+  // Update placeholder for other keys
+  setTimeout(() => {
+    updateTitlePlaceholder();
+  }, 10);
 };
 
+// Handle content input
 const handleContentInput = () => {
-  cleanupElement(contentElement.value);
+  updateContentPlaceholder();
+  
   emit('update:content', { 
     index: props.pageIndex, 
     content: contentElement.value?.innerHTML || '' 
   });
   
-  // Check for overflow after content update
-  nextTick(() => {
-    checkContentOverflow();
-  });
+  setTimeout(() => {
+    checkForOverflow();
+  }, 10);
 };
 
-const handleContentKeyup = (event) => {
-  // Check for overflow on key events that might add content
-  if (['Enter', 'Space', 'Backspace', 'Delete'].includes(event.code) || 
-      event.key.length === 1) {
-    // Use immediate check for overflow to prevent visible scrolling
-    checkContentOverflow();
+// Handle content paste
+const handleContentPaste = (event) => {
+  setTimeout(() => {
+    updateContentPlaceholder();
+    handleContentInput();
+  }, 10);
+};
+
+// Handle content keydown
+const handleContentKeydown = (event) => {
+  if (event.key === 'Enter') {
+    setTimeout(() => {
+      updateContentPlaceholder();
+      checkForOverflow();
+    }, 10);
   }
   
-  // Handle navigation to next page
-  if (event.key === 'ArrowDown' && isAtEndOfContent()) {
-    emit('focus-next-page', props.pageIndex);
+  // For other keys that might change content
+  if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete') {
+    setTimeout(() => {
+      updateContentPlaceholder();
+      checkForOverflow();
+    }, 10);
   }
 };
 
-// Check if cursor is at the end of content
-const isAtEndOfContent = () => {
-  const selection = window.getSelection();
-  if (selection.rangeCount === 0) return false;
-  
-  const range = selection.getRangeAt(0);
-  const element = contentElement.value;
-  
-  return range.endOffset === element.textContent.length;
-};
-
+// Expose methods
 defineExpose({
-  focusTitle: () => titleElement.value?.focus(),
-  focusContent: () => contentElement.value?.focus()
+  focusTitle: () => {
+    if (titleElement.value) {
+      titleElement.value.focus();
+    }
+  },
+  
+  focusContent: () => {
+    if (contentElement.value) {
+      contentElement.value.focus();
+    }
+  },
+  
+  focusContentAtEnd: () => {
+    if (contentElement.value) {
+      contentElement.value.focus();
+      
+      const range = document.createRange();
+      const selection = window.getSelection();
+      range.selectNodeContents(contentElement.value);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      contentElement.value.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+    }
+  }
 });
 </script>
 
@@ -273,7 +336,7 @@ defineExpose({
   line-height: 1.8;
   color: #333;
   margin: 0;
-  text-align: left;
+  text-align: justify;
   font-weight: 400;
   min-height: 3rem;
   outline: none;
@@ -281,37 +344,40 @@ defineExpose({
   overflow: hidden;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  max-height: calc(127.26vh - 6vh - 6vh - 3.5rem - 3vh); /* Explicit max-height to prevent scrolling */
+  max-height: calc(127.26vh - 6vh - 6vh - 3.5rem - 3vh);
 }
 
-/* Placeholder text styling */
-.page-title[contenteditable="true"]:empty::before {
+/* FIXED: Better placeholder handling for both title and content */
+.page-title:empty::before,
+.page-title.empty::before {
   content: attr(data-placeholder);
   color: #999;
   font-style: italic;
   pointer-events: none;
+  display: block;
 }
 
-.page-content[contenteditable="true"]:empty::before {
+.page-content:empty::before,
+.page-content.empty::before {
   content: attr(data-placeholder);
   color: #999;
   font-style: italic;
   pointer-events: none;
+  display: block;
 }
 
-/* Remove outline from editable elements when focused */
 [contenteditable="true"]:focus {
   outline: none;
 }
 
-/* Responsive adjustments */
 @media (max-width: 1200px) {
   .page {
     padding: 2rem;
   }
   
   .page-title {
-    font-size: 1.75rem;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
   }
 }
 
@@ -322,6 +388,7 @@ defineExpose({
   
   .page-title {
     font-size: 1.5rem;
+    margin-bottom: 1rem;
   }
   
   .page-content {
