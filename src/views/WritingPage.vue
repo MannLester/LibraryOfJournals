@@ -215,6 +215,9 @@ const currentPage = ref(1);
 const chapterPageRef = ref(null);
 const normalPageRefs = ref({});
 
+// Add this after the other refs
+const isProcessingOverflow = ref(false);
+
 // Computed properties
 const normalPages = computed(() => {
   return pages.value.slice(1).filter(page => page.type === 'normal');
@@ -286,6 +289,13 @@ const updatePageContent = ({ index, content }) => {
 
 // Handle content overflow - create new page
 const handleContentOverflow = ({ pageIndex, overflowContent, remainingContent }) => {
+  // Prevent multiple overflow events from being processed simultaneously
+  if (isProcessingOverflow.value) {
+    return;
+  }
+  
+  isProcessingOverflow.value = true;
+  
   console.log('Content overflow detected:', { pageIndex, overflowContent, remainingContent });
   
   // Update current page with remaining content
@@ -309,6 +319,11 @@ const handleContentOverflow = ({ pageIndex, overflowContent, remainingContent })
     if (newPageRef) {
       newPageRef.focusContent();
     }
+    
+    // Reset the overflow processing flag after a short delay
+    setTimeout(() => {
+      isProcessingOverflow.value = false;
+    }, 100);
   });
 };
 
