@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
+import router from './router'
 
 // Add style element to head for critical overrides
 const style = document.createElement('style')
@@ -22,4 +23,6 @@ style.textContent = `
 `
 document.head.appendChild(style)
 
-createApp(App).mount('#app')
+const app = createApp(App)
+app.use(router)
+app.mount('#app')

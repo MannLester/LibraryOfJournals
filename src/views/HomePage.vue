@@ -75,7 +75,7 @@
           </div>
           
           <div class="option-buttons">
-            <button class="option-button">
+            <button class="option-button" @click="navigateToWrite">
               <span class="option-icon">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M4 19.5C4 18.837 4.26339 18.2011 4.73223 17.7322C5.20107 17.2634 5.83696 17 6.5 17H20" stroke="#333333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -373,7 +373,7 @@
               <div class="streak-label">days in a row</div>
             </div>
             
-            <button class="outline-button">
+            <button class="outline-button" @click="navigateToWrite">
               Keep the Streak Going
             </button>
           </div>

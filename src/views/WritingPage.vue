@@ -43,7 +43,7 @@
       <!-- Left Sidebar -->
       <div class="left-sidebar">
         <div class="sidebar-top">
-          <button class="back-to-home">
+          <button class="back-to-home" @click="goToHome">
             <span class="home-icon">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -378,6 +378,11 @@ const focusPreviousPage = (currentPageIndex) => {
       }
     });
   }
+};
+
+const goToHome = () => {
+  // Dispatch custom event to change page
+  window.dispatchEvent(new CustomEvent('showPage', { detail: { page: 'home' } }));
 };
 
 // Initialize zoom when component is mounted
