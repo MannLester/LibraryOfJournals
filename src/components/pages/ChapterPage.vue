@@ -242,7 +242,7 @@ defineExpose({
 
 <style scoped>
 .page {
-  background: #f5efd5;
+  background: white;
   width: 90vh;
   max-width: 100%;
   height: 127.26vh;
