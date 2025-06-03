@@ -122,47 +122,120 @@
         <!-- Editor Area -->
         <div class="editor-area">
           <div class="editor-content" :class="{ 'double-page': isDoublePage }">
-            <!-- Chapter Page (First Page) -->
-            <ChapterPage
-              v-if="pages.length > 0"
-              :page="pages[0]"
-              :pageIndex="0"
-              @update:title="updatePageTitle"
-              @update:content="updatePageContent"
-              @create-next-page="handleCreateNextPage"
-              @push-overflow-to-next-page="handlePushOverflow"
-              @focus-next-page="handleFocusNextPage"
-              ref="chapterPageRef"
-            />
             
-            <!-- Normal Pages -->
-            <NormalPage
-              v-for="(page, index) in normalPages"
-              :key="page.id"
-              :page="page"
-              :pageIndex="index + 1"
-              @update:content="updatePageContent"
-              @create-next-page="handleCreateNextPage"
-              @push-overflow-to-next-page="handlePushOverflow"
-              @focus-next-page="handleFocusNextPage"
-              @delete-current-page="handleDeletePage"
-              :ref="el => setNormalPageRef(el, index + 1)"
-            />
+            <!-- Single Page View: Vertical Stack -->
+            <template v-if="!isDoublePage">
+              <!-- Chapter Page (First Page) -->
+              <ChapterPage
+                v-if="pages.length > 0"
+                :page="pages[0]"
+                :pageIndex="0"
+                @update:title="updatePageTitle"
+                @update:content="updatePageContent"
+                @create-next-page="handleCreateNextPage"
+                @push-overflow-to-next-page="handlePushOverflow"
+                @focus-next-page="handleFocusNextPage"
+                ref="chapterPageRef"
+              />
+              
+              <!-- Normal Pages -->
+              <NormalPage
+                v-for="(page, index) in normalPages"
+                :key="page.id"
+                :page="page"
+                :pageIndex="index + 1"
+                @update:content="updatePageContent"
+                @create-next-page="handleCreateNextPage"
+                @push-overflow-to-next-page="handlePushOverflow"
+                @focus-next-page="handleFocusNextPage"
+                @delete-current-page="handleDeletePage"
+                :ref="el => setNormalPageRef(el, index + 1)"
+              />
+            </template>
+
+            <!-- Double Page View: Side by Side like Open Book -->
+            <template v-else>
+              <div class="book-spread">
+                <!-- Left Page -->
+                <div class="book-page left-page">
+                  <ChapterPage
+                    v-if="pages.length > 0 && currentDoublePageIndex === 0"
+                    :page="pages[0]"
+                    :pageIndex="0"
+                    @update:title="updatePageTitle"
+                    @update:content="updatePageContent"
+                    @create-next-page="handleCreateNextPage"
+                    @push-overflow-to-next-page="handlePushOverflow"
+                    @focus-next-page="handleFocusNextPage"
+                    ref="chapterPageRef"
+                  />
+                  <NormalPage
+                    v-else-if="leftPageData"
+                    :key="leftPageData.id"
+                    :page="leftPageData"
+                    :pageIndex="leftPageIndex"
+                    @update:content="updatePageContent"
+                    @create-next-page="handleCreateNextPage"
+                    @push-overflow-to-next-page="handlePushOverflow"
+                    @focus-next-page="handleFocusNextPage"
+                    @delete-current-page="handleDeletePage"
+                    :ref="el => setNormalPageRef(el, leftPageIndex)"
+                  />
+                  <div v-else class="empty-page">
+                    <div class="empty-page-content">No content</div>
+                  </div>
+                </div>
+
+                <!-- Book Spine/Gutter -->
+                <div class="book-spine"></div>
+
+                <!-- Right Page -->
+                <div class="book-page right-page">
+                  <NormalPage
+                    v-if="rightPageData"
+                    :key="rightPageData.id"
+                    :page="rightPageData"
+                    :pageIndex="rightPageIndex"
+                    @update:content="updatePageContent"
+                    @create-next-page="handleCreateNextPage"
+                    @push-overflow-to-next-page="handlePushOverflow"
+                    @focus-next-page="handleFocusNextPage"
+                    @delete-current-page="handleDeletePage"
+                    :ref="el => setNormalPageRef(el, rightPageIndex)"
+                  />
+                  <div v-else class="empty-page">
+                    <div class="empty-page-content">No content</div>
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
 
         <!-- Bottom Navigation - Only show in Double Page mode -->
         <div class="bottom-nav-bar" v-if="isDoublePage">
           <div class="nav-section left-section">
-            <button class="pagination-btn" title="Previous page">
+            <button 
+              class="pagination-btn" 
+              title="Previous spread"
+              @click="previousSpread"
+              :disabled="currentDoublePageIndex <= 0"
+            >
               <span class="icon-arrow-left"></span> Previous
             </button>
           </div>
           <div class="nav-section center-section">
-            <span class="page-indicator">Page {{ currentPage }} of {{ totalPages }}</span>
+            <span class="page-indicator">
+              Pages {{ leftPageIndex + 1 }}-{{ rightPageIndex + 1 }} of {{ totalPages }}
+            </span>
           </div>
           <div class="nav-section right-section">
-            <button class="pagination-btn" title="Next page">
+            <button 
+              class="pagination-btn" 
+              title="Next spread"
+              @click="nextSpread"
+              :disabled="currentDoublePageIndex >= Math.floor((totalPages - 1) / 2)"
+            >
               Next <span class="icon-arrow-right"></span>
             </button>
           </div>
@@ -201,6 +274,7 @@ let zoomTimeout = null;
 
 // View mode state
 const isDoublePage = ref(false);
+const currentDoublePageIndex = ref(0); // For double page navigation
 
 // Page management
 const pages = ref([
@@ -227,6 +301,34 @@ const totalPages = computed(() => {
   return pages.value.length;
 });
 
+// Double page computed properties
+const leftPageIndex = computed(() => {
+  if (currentDoublePageIndex.value === 0) {
+    return 0; // Chapter page
+  }
+  return (currentDoublePageIndex.value * 2) - 1;
+});
+
+const rightPageIndex = computed(() => {
+  if (currentDoublePageIndex.value === 0) {
+    return 1; // First normal page
+  }
+  return currentDoublePageIndex.value * 2;
+});
+
+const leftPageData = computed(() => {
+  if (currentDoublePageIndex.value === 0) {
+    return null; // Chapter page is handled separately
+  }
+  const index = leftPageIndex.value;
+  return index < pages.value.length ? pages.value[index] : null;
+});
+
+const rightPageData = computed(() => {
+  const index = rightPageIndex.value;
+  return index < pages.value.length ? pages.value[index] : null;
+});
+
 // Helper function to set normal page refs
 const setNormalPageRef = (el, index) => {
   if (el) {
@@ -240,8 +342,26 @@ const toggleViewMode = (mode) => {
   isDoublePage.value = mode === 'double';
   
   if (!wasDoublePage && isDoublePage.value) {
-    zoomLevel.value = 90;
+    zoomLevel.value = 70; // Smaller zoom for double page
+    currentDoublePageIndex.value = 0; // Start from first spread
     triggerZoomChange();
+  } else if (wasDoublePage && !isDoublePage.value) {
+    zoomLevel.value = 90; // Normal zoom for single page
+    triggerZoomChange();
+  }
+};
+
+// Double page navigation
+const previousSpread = () => {
+  if (currentDoublePageIndex.value > 0) {
+    currentDoublePageIndex.value--;
+  }
+};
+
+const nextSpread = () => {
+  const maxSpread = Math.floor((totalPages.value - 1) / 2);
+  if (currentDoublePageIndex.value < maxSpread) {
+    currentDoublePageIndex.value++;
   }
 };
 
@@ -287,7 +407,7 @@ const updatePageContent = ({ index, content }) => {
   }
 };
 
-// NEW: Handle pushing overflow content to next page with ripple effect
+// Handle pushing overflow content to next page with ripple effect
 const handlePushOverflow = ({ pageIndex, nextPageIndex, overflowContent }) => {
   console.log(`Pushing overflow from page ${pageIndex} to ${nextPageIndex}`, { overflowContent });
   
@@ -378,10 +498,10 @@ const emit = defineEmits([
   'update:content',
   'create-next-page',
   'push-overflow-to-next-page',
-  'focus-next-page' // Add this new event
+  'focus-next-page'
 ]);
 
-// NEW: Handle focusing next page when cursor moves to overflow content
+// Handle focusing next page when cursor moves to overflow content
 const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   console.log(`Focusing next page ${nextPageIndex} at offset ${cursorOffset}`);
   
@@ -403,7 +523,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
 </script>
 
 <style scoped>
-/* All the existing styles remain the same */
+/* All the existing styles remain the same until editor-content */
 .writing-page-container {
   display: flex;
   flex-direction: column;
@@ -845,6 +965,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   min-height: calc(100% - 60px);
 }
 
+/* UPDATED: Editor Content for Single and Double Page Views */
 .editor-content {
   background-color: #fff;
   border: 1px solid #e0e0e0;
@@ -866,18 +987,92 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   max-width: 100%;
 }
 
+/* UPDATED: Double Page Layout - Side by Side like Open Book */
 .editor-content.double-page {
-  width: 180vh;
+  width: auto;
+  min-width: 180vh;
   max-width: calc(100vw - 320px);
-  flex-direction: row;
+  min-height: auto;
+  padding: 20px;
+  background: #f5f5f5;
+  border: none;
+  box-shadow: none;
+}
+
+/* NEW: Book Spread Layout */
+.book-spread {
+  display: flex;
+  align-items: flex-start;
   justify-content: center;
-  gap: 40px;
-  padding: 20px 0;
+  gap: 0;
+  width: 100%;
+  min-height: 127.26vh;
+}
+
+.book-page {
+  flex: 0 0 auto;
+  width: 90vh;
+  max-width: 45vw;
+}
+
+.left-page {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.right-page {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* NEW: Book Spine/Gutter */
+.book-spine {
+  width: 20px;
+  background: linear-gradient(to right, 
+    rgba(0, 0, 0, 0.1) 0%, 
+    rgba(0, 0, 0, 0.05) 50%, 
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  min-height: 127.26vh;
+  flex-shrink: 0;
+}
+
+/* NEW: Empty Page Styling */
+.empty-page {
+  background: white;
+  width: 90vh;
+  max-width: 100%;
+  height: 127.26vh;
+  padding: 6vh 8vh;
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  border: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-page-content {
+  color: #999;
+  font-style: italic;
+  font-size: 1.2rem;
+  font-family: 'Caveat', cursive;
 }
 
 @media (max-width: 1200px) {
   .editor-content {
     transform: scale(0.7);
+  }
+  
+  .editor-content.double-page {
+    transform: scale(0.6);
+  }
+  
+  .book-page {
+    width: 70vh;
   }
 }
 
@@ -888,6 +1083,28 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
     transform: none;
     padding: 4vh 5vw;
     margin: 2vh auto;
+  }
+  
+  .editor-content.double-page {
+    flex-direction: column;
+    width: 90vw;
+    transform: none;
+  }
+  
+  .book-spread {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .book-spine {
+    width: 100%;
+    height: 20px;
+    min-height: auto;
+  }
+  
+  .book-page {
+    width: 100%;
+    max-width: none;
   }
 }
 
@@ -951,10 +1168,15 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   white-space: nowrap;
 }
 
-.pagination-btn:hover {
+.pagination-btn:hover:not(:disabled) {
   color: #E9184C;
   transform: none;
   background: transparent;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .icon-arrow-left,
