@@ -994,7 +994,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   max-width: calc(100vw - 320px);
   min-height: auto;
   padding: 20px;
-  background: #f5f5f5;
+  background: #3a2a1d;
   border: none;
   box-shadow: none;
 }
@@ -1007,24 +1007,25 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   gap: 0;
   width: 100%;
   min-height: 127.26vh;
+  position: relative;
 }
 
 .book-page {
   flex: 0 0 auto;
   width: 90vh;
   max-width: 45vw;
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  top: 0;
+  margin: 0;
+  padding: 0;
 }
 
-.left-page {
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.right-page {
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+.book-page > * {
+  margin: 0 !important;
+  position: relative;
+  top: 0;
 }
 
 /* NEW: Book Spine/Gutter */
@@ -1053,6 +1054,8 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 0 !important;
+  top: 0;
 }
 
 .empty-page-content {
