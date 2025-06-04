@@ -692,19 +692,46 @@ const handleDeletePage = (pageIndex) => {
     return;
   }
   
+  // Check if we're in double page mode and deleting a left page of a spread (not the first spread)
+  const isLeftPageInSpread = isDoublePage.value && 
+                            pageIndex === leftPageIndex.value && 
+                            currentDoublePageIndex.value > 0;
+  
+  // Store the current double page index before deletion
+  const currentSpreadIndex = currentDoublePageIndex.value;
+  
+  // Delete the page
   pages.value.splice(pageIndex, 1);
   
+  // Handle navigation after deletion
   nextTick(() => {
-    const prevIndex = pageIndex - 1;
-    
-    if (prevIndex === 0) {
-      if (chapterPageRef.value) {
+    if (isLeftPageInSpread) {
+      // If deleting left page in a spread, go back to previous spread
+      console.log('Deleted left page in spread, navigating to previous spread');
+      currentDoublePageIndex.value = currentSpreadIndex - 1;
+      
+      // Focus on the right page of the previous spread
+      const prevRightPageIndex = currentDoublePageIndex.value * 2 + 1;
+      const prevRightPageRef = normalPageRefs.value[prevRightPageIndex];
+      
+      if (prevRightPageIndex === 1 && chapterPageRef.value) {
         chapterPageRef.value.focusContentAtEnd();
+      } else if (prevRightPageRef) {
+        prevRightPageRef.focusAtEnd();
       }
     } else {
-      const prevPageRef = normalPageRefs.value[prevIndex];
-      if (prevPageRef) {
-        prevPageRef.focusAtEnd();
+      // Original behavior for other cases
+      const prevIndex = pageIndex - 1;
+      
+      if (prevIndex === 0) {
+        if (chapterPageRef.value) {
+          chapterPageRef.value.focusContentAtEnd();
+        }
+      } else {
+        const prevPageRef = normalPageRefs.value[prevIndex];
+        if (prevPageRef) {
+          prevPageRef.focusAtEnd();
+        }
       }
     }
   });
@@ -1835,3 +1862,4 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   animation: zoomPulse 0.6s ease;
 }
 </style>
+  
