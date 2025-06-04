@@ -1,5 +1,8 @@
 <template>
-  <div class="page" ref="pageElement">
+  <div class="page" :class="{ 
+    'double-page-left': isDoublePageLeft, 
+    'double-page-right': isDoublePageRight 
+  }" ref="pageElement">
     <div 
       class="page-content"
       contenteditable="true"
@@ -8,6 +11,10 @@
       @keydown="handleKeydown"
       @paste="handlePaste"
       ref="contentElement"
+      :style="{
+        paddingLeft: isDoublePageLeft ? '12vh' : '8vh',
+        paddingRight: isDoublePageRight ? '12vh' : '8vh'
+      }"
     ></div>
   </div>
 </template>
@@ -23,6 +30,18 @@ const props = defineProps({
   pageIndex: {
     type: Number,
     required: true
+  },
+  isDoublePageLeft: {
+    type: Boolean,
+    default: false
+  },
+  isDoublePageRight: {
+    type: Boolean,
+    default: false
+  },
+  isInDoublePageMode: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -31,7 +50,8 @@ const emit = defineEmits([
   'create-next-page',
   'push-overflow-to-next-page', // New event for pushing content to existing page
   'delete-current-page',
-  'focus-previous-page'
+  'focus-previous-page',
+  'focus-next-page' // Declare the focus-next-page event
 ]);
 
 const pageElement = ref(null);
@@ -114,12 +134,38 @@ const checkForOverflow = () => {
 // Modify the handleOverflow function to preserve cursor position
 const handleOverflow = () => {
   if (!contentElement.value) return;
-  
+
   const content = contentElement.value.textContent;
   if (!content || content.trim() === '') return;
-  
+
   console.log('Handling overflow for content:', content.substring(0, 50) + '...');
-  
+
+  // NEW: Check if we're in double page mode and this is a right page
+  if (props.isInDoublePageMode && props.isDoublePageRight) {
+    console.log('Right page in double page mode is full - will trigger page turn');
+    // Let the parent handle the page turn logic
+    // Just emit the overflow event and let WritingPage handle it
+    emit('push-overflow-to-next-page', {
+      pageIndex: props.pageIndex,
+      nextPageIndex: props.pageIndex + 1,
+      overflowContent: content.substring(findOptimalSplitPoint(content)).trim()
+    });
+    
+    // Update current page content to remove overflow
+    const splitPoint = findOptimalSplitPoint(content);
+    const currentPageContent = content.substring(0, splitPoint).trim();
+    contentElement.value.textContent = currentPageContent;
+    updatePlaceholderVisibility();
+    
+    emit('update:content', { 
+      index: props.pageIndex, 
+      content: contentElement.value.innerHTML 
+    });
+    
+    return;
+  }
+
+  // Original overflow handling for single page mode or left pages
   // Save cursor position and selection before modifying content
   const selection = window.getSelection();
   let cursorPosition = 0;
@@ -494,7 +540,7 @@ defineExpose({
   width: 90vh;
   max-width: 100%;
   height: 127.26vh;
-  padding: 6vh 8vh;
+  padding: 6vh 0; /* Remove horizontal padding from page container */
   box-sizing: border-box;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: relative;
@@ -519,6 +565,7 @@ defineExpose({
   max-height: calc(127.26vh - 6vh - 6vh - 2rem);
   direction: ltr;
   unicode-bidi: normal;
+  padding: 0 8vh; /* Default horizontal padding */
 }
 
 /* Better placeholder handling */
@@ -537,18 +584,23 @@ defineExpose({
 
 @media (max-width: 1200px) {
   .page {
-    padding: 2rem;
+    padding: 2rem 0;
+  }
+  
+  .page-content {
+    padding: 0 2rem;
   }
 }
 
 @media (max-width: 768px) {
   .page {
-    padding: 1.5rem;
+    padding: 1.5rem 0;
   }
   
   .page-content {
     font-size: 1rem;
     line-height: 1.7;
+    padding: 0 1.5rem;
   }
 }
 </style>

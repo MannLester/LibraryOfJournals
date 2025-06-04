@@ -1,5 +1,8 @@
 <template>
-  <div class="page" ref="pageElement">
+  <div class="page" :class="{ 
+    'double-page-left': isDoublePageLeft, 
+    'double-page-right': isDoublePageRight 
+  }" ref="pageElement">
     <div 
       class="page-title" 
       ref="titleElement"
@@ -7,6 +10,10 @@
       data-placeholder="Untitled Chapter"
       @input="handleTitleInput"
       @keydown="handleTitleKeydown"
+      :style="{
+        paddingLeft: isDoublePageLeft ? '12vh' : '8vh',
+        paddingRight: isDoublePageRight ? '12vh' : '8vh'
+      }"
     ></div>
     <div 
       class="page-content" 
@@ -16,6 +23,10 @@
       @input="handleContentInput"
       @keydown="handleContentKeydown"
       @paste="handleContentPaste"
+      :style="{
+        paddingLeft: isDoublePageLeft ? '12vh' : '8vh',
+        paddingRight: isDoublePageRight ? '12vh' : '8vh'
+      }"
     ></div>
   </div>
 </template>
@@ -31,6 +42,18 @@ const props = defineProps({
   pageIndex: {
     type: Number,
     required: true
+  },
+  isDoublePageLeft: {
+    type: Boolean,
+    default: false
+  },
+  isDoublePageRight: {
+    type: Boolean,
+    default: false
+  },
+  isInDoublePageMode: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -509,7 +532,7 @@ defineExpose({
   width: 90vh;
   max-width: 100%;
   height: 127.26vh;
-  padding: 6vh 8vh;
+  padding: 6vh 0; /* Remove horizontal padding from page container */
   box-sizing: border-box;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   position: relative;
@@ -525,6 +548,8 @@ defineExpose({
   font-weight: 600;
   border-bottom: 1px solid #eee;
   padding-bottom: 1vh;
+  padding-left: 8vh; /* Default horizontal padding */
+  padding-right: 8vh; /* Default horizontal padding */
   line-height: 1.2;
   min-height: 3.5rem;
   outline: none;
@@ -545,6 +570,7 @@ defineExpose({
   word-wrap: break-word;
   overflow-wrap: break-word;
   max-height: calc(127.26vh - 6vh - 6vh - 3.5rem - 3vh);
+  padding: 0 8vh; /* Default horizontal padding */
 }
 
 /* Better placeholder handling for both title and content */
@@ -572,28 +598,37 @@ defineExpose({
 
 @media (max-width: 1200px) {
   .page {
-    padding: 2rem;
+    padding: 2rem 0;
   }
   
   .page-title {
     font-size: 1.8rem;
     margin-bottom: 1.5rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  
+  .page-content {
+    padding: 0 2rem;
   }
 }
 
 @media (max-width: 768px) {
   .page {
-    padding: 1.5rem;
+    padding: 1.5rem 0;
   }
   
   .page-title {
     font-size: 1.5rem;
     margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
   
   .page-content {
     font-size: 1rem;
     line-height: 1.7;
+    padding: 0 1.5rem;
   }
 }
 </style>

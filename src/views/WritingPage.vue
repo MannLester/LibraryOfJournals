@@ -121,7 +121,7 @@
       <div class="content-wrapper">
         <!-- Editor Area -->
         <div class="editor-area">
-          <div class="editor-content" :class="{ 'double-page': isDoublePage }">
+          <div class="editor-content" :class="{ 'double-page': isDoublePage, 'page-turning': isPageTurning }">
             
             <!-- Single Page View: Vertical Stack -->
             <template v-if="!isDoublePage">
@@ -155,17 +155,19 @@
 
             <!-- Double Page View: Side by Side like Open Book -->
             <template v-else>
-              <div class="book-spread">
+              <div class="book-spread" :class="{ 'turning': isPageTurning }">
                 <!-- Left Page -->
                 <div class="book-page left-page">
                   <ChapterPage
                     v-if="pages.length > 0 && currentDoublePageIndex === 0"
                     :page="pages[0]"
                     :pageIndex="0"
+                    :isDoublePageLeft="true"
+                    :isInDoublePageMode="true"
                     @update:title="updatePageTitle"
                     @update:content="updatePageContent"
                     @create-next-page="handleCreateNextPage"
-                    @push-overflow-to-next-page="handlePushOverflow"
+                    @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
                     @focus-next-page="handleFocusNextPage"
                     ref="chapterPageRef"
                   />
@@ -174,9 +176,11 @@
                     :key="leftPageData.id"
                     :page="leftPageData"
                     :pageIndex="leftPageIndex"
+                    :isDoublePageLeft="true"
+                    :isInDoublePageMode="true"
                     @update:content="updatePageContent"
                     @create-next-page="handleCreateNextPage"
-                    @push-overflow-to-next-page="handlePushOverflow"
+                    @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
                     @focus-next-page="handleFocusNextPage"
                     @delete-current-page="handleDeletePage"
                     :ref="el => setNormalPageRef(el, leftPageIndex)"
@@ -196,9 +200,11 @@
                     :key="rightPageData.id"
                     :page="rightPageData"
                     :pageIndex="rightPageIndex"
+                    :isDoublePageRight="true"
+                    :isInDoublePageMode="true"
                     @update:content="updatePageContent"
                     @create-next-page="handleCreateNextPage"
-                    @push-overflow-to-next-page="handlePushOverflow"
+                    @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
                     @focus-next-page="handleFocusNextPage"
                     @delete-current-page="handleDeletePage"
                     :ref="el => setNormalPageRef(el, rightPageIndex)"
@@ -226,7 +232,7 @@
           </div>
           <div class="nav-section center-section">
             <span class="page-indicator">
-              Pages {{ leftPageIndex + 1 }}-{{ rightPageIndex + 1 }} of {{ totalPages }}
+              Pages {{ getDisplayPageNumbers() }} of {{ totalPages }}
             </span>
           </div>
           <div class="nav-section right-section">
@@ -234,7 +240,7 @@
               class="pagination-btn" 
               title="Next spread"
               @click="nextSpread"
-              :disabled="currentDoublePageIndex >= Math.floor((totalPages - 1) / 2)"
+              :disabled="!canGoToNextSpread"
             >
               Next <span class="icon-arrow-right"></span>
             </button>
@@ -275,6 +281,7 @@ let zoomTimeout = null;
 // View mode state
 const isDoublePage = ref(false);
 const currentDoublePageIndex = ref(0); // For double page navigation
+const isPageTurning = ref(false); // For page turn animation
 
 // Page management
 const pages = ref([
@@ -301,19 +308,21 @@ const totalPages = computed(() => {
   return pages.value.length;
 });
 
-// Double page computed properties
+// NEW: Book-like double page computed properties
 const leftPageIndex = computed(() => {
   if (currentDoublePageIndex.value === 0) {
-    return 0; // Chapter page
+    return 0; // Chapter page is always on the left of first spread
   }
-  return (currentDoublePageIndex.value * 2) - 1;
+  // For subsequent spreads: spread 1 = pages 2,3; spread 2 = pages 4,5; etc.
+  return (currentDoublePageIndex.value * 2);
 });
 
 const rightPageIndex = computed(() => {
   if (currentDoublePageIndex.value === 0) {
-    return 1; // First normal page
+    return 1; // First normal page is on the right of first spread
   }
-  return currentDoublePageIndex.value * 2;
+  // For subsequent spreads: spread 1 = pages 2,3; spread 2 = pages 4,5; etc.
+  return (currentDoublePageIndex.value * 2) + 1;
 });
 
 const leftPageData = computed(() => {
@@ -328,6 +337,24 @@ const rightPageData = computed(() => {
   const index = rightPageIndex.value;
   return index < pages.value.length ? pages.value[index] : null;
 });
+
+// NEW: Check if we can go to next spread
+const canGoToNextSpread = computed(() => {
+  const maxPageIndex = Math.max(leftPageIndex.value, rightPageIndex.value);
+  return maxPageIndex < pages.value.length - 1;
+});
+
+// NEW: Get display page numbers for bottom nav
+const getDisplayPageNumbers = () => {
+  const left = leftPageIndex.value + 1;
+  const right = rightPageIndex.value + 1;
+  
+  if (rightPageIndex.value < pages.value.length) {
+    return `${left}-${right}`;
+  } else {
+    return `${left}`;
+  }
+};
 
 // Helper function to set normal page refs
 const setNormalPageRef = (el, index) => {
@@ -351,18 +378,50 @@ const toggleViewMode = (mode) => {
   }
 };
 
-// Double page navigation
-const previousSpread = () => {
+// NEW: Realistic page turn animation
+const performPageTurn = async () => {
+  isPageTurning.value = true;
+  
+  // Add turning class to trigger animation
+  const bookSpread = document.querySelector('.book-spread');
+  if (bookSpread) {
+    bookSpread.classList.add('turning');
+    
+    // Wait for page flip animation to complete
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Remove turning class and add new spread class
+    bookSpread.classList.remove('turning');
+    bookSpread.classList.add('new-spread');
+    
+    // Remove new spread class after fade in completes
+    setTimeout(() => {
+      bookSpread.classList.remove('new-spread');
+    }, 800);
+  }
+  
+  isPageTurning.value = false;
+};
+
+const previousSpread = async () => {
   if (currentDoublePageIndex.value > 0) {
+    await performPageTurn();
     currentDoublePageIndex.value--;
   }
 };
 
-const nextSpread = () => {
-  const maxSpread = Math.floor((totalPages.value - 1) / 2);
-  if (currentDoublePageIndex.value < maxSpread) {
+const nextSpread = async () => {
+  if (canGoToNextSpread.value) {
+    await performPageTurn();
     currentDoublePageIndex.value++;
   }
+};
+
+// NEW: Auto-advance to next spread when right page is full
+const autoAdvanceToNextSpread = async () => {
+  console.log('Auto-advancing to next spread...');
+  await performPageTurn();
+  currentDoublePageIndex.value++;
 };
 
 const handleZoomIn = () => {
@@ -407,9 +466,64 @@ const updatePageContent = ({ index, content }) => {
   }
 };
 
-// Handle pushing overflow content to next page with ripple effect
+// NEW: Handle overflow in double page mode with book-like behavior
+const handlePushOverflowDoublePageMode = async ({ pageIndex, nextPageIndex, overflowContent }) => {
+  console.log(`Double page mode: Pushing overflow from page ${pageIndex} to ${nextPageIndex}`, { overflowContent });
+  
+  // Check if this is the right page of the current spread
+  const isRightPageOfSpread = pageIndex === rightPageIndex.value;
+  
+  if (isRightPageOfSpread) {
+    console.log('Right page of spread is full, creating new spread...');
+    
+    // Create new pages for the next spread
+    const newLeftPage = {
+      id: Date.now(),
+      type: 'normal',
+      content: overflowContent
+    };
+    
+    const newRightPage = {
+      id: Date.now() + 1,
+      type: 'normal',
+      content: ''
+    };
+    
+    // Add both pages to ensure we have a complete spread
+    pages.value.push(newLeftPage, newRightPage);
+    
+    // Auto-advance to the new spread
+    await autoAdvanceToNextSpread();
+    
+    // Focus the new left page where the content was moved
+    nextTick(() => {
+      const newLeftPageRef = normalPageRefs.value[pages.value.length - 2];
+      if (newLeftPageRef) {
+        newLeftPageRef.focusAtEnd();
+      }
+    });
+  } else {
+    // This is the left page or chapter page, handle normally
+    if (nextPageIndex < pages.value.length) {
+      // Next page exists, prepend content to it
+      const nextPageRef = nextPageIndex === 0 ? chapterPageRef.value : normalPageRefs.value[nextPageIndex];
+      
+      if (nextPageRef) {
+        nextPageRef.prependContent(overflowContent);
+      }
+    } else {
+      // Next page doesn't exist, create it
+      handleCreateNextPage({ 
+        pageIndex, 
+        overflowContent 
+      });
+    }
+  }
+};
+
+// Handle pushing overflow content to next page (for single page mode)
 const handlePushOverflow = ({ pageIndex, nextPageIndex, overflowContent }) => {
-  console.log(`Pushing overflow from page ${pageIndex} to ${nextPageIndex}`, { overflowContent });
+  console.log(`Single page mode: Pushing overflow from page ${pageIndex} to ${nextPageIndex}`, { overflowContent });
   
   // Check if next page exists
   if (nextPageIndex < pages.value.length) {
@@ -665,7 +779,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
 .view-toggle-btn.active {
   background: white;
   color: #E9184C;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   font-weight: 600;
 }
 
@@ -690,7 +804,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
 .mode-btn.active {
   background: white;
   color: #E9184C;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   font-weight: 600;
 }
 
@@ -993,10 +1107,140 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   min-width: 180vh;
   max-width: calc(100vw - 320px);
   min-height: auto;
-  padding: 20px;
+  padding: 40px;
   background: #3a2a1d;
   border: none;
   box-shadow: none;
+}
+
+/* Remove the old tilting animation and replace with realistic page turning */
+.editor-content.page-turning {
+  transition: none; /* Remove the tilting effect */
+}
+
+/* Remove the old pageTurn animation */
+.editor-content.page-turning .book-spread {
+  animation: none;
+}
+
+/* NEW: Realistic page turning animation */
+.book-spread {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  min-height: 127.26vh;
+  position: relative;
+  padding: 0 15px;
+  perspective: 1000px; /* Add perspective for 3D effect */
+}
+
+/* Page turning states */
+.book-spread.turning {
+  overflow: visible;
+}
+
+.book-spread.turning .right-page {
+  transform-origin: left center;
+  animation: pageFlip 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  z-index: 10;
+  position: relative;
+}
+
+.book-spread.turning .right-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  opacity: 0;
+  animation: pageShadow 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* The actual page flip animation */
+@keyframes pageFlip {
+  0% {
+    transform: rotateY(0deg);
+  }
+  50% {
+    transform: rotateY(-90deg);
+  }
+  100% {
+    transform: rotateY(-180deg);
+    opacity: 0;
+  }
+}
+
+/* Shadow effect during page turn */
+@keyframes pageShadow {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* New spread fade in */
+.book-spread.new-spread {
+  opacity: 0;
+  animation: spreadFadeIn 0.4s ease-out 0.4s forwards;
+}
+
+@keyframes spreadFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Page curl effect for more realism */
+.book-spread.turning .right-page .page {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+/* Add subtle page bend during turn */
+.book-spread.turning .right-page .page::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(
+    to left,
+    rgba(0, 0, 0, 0.1) 0%,
+    transparent 100%
+  );
+  opacity: 0;
+  animation: pageBend 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes pageBend {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* NEW: Book Spread Layout */
@@ -1008,6 +1252,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   width: 100%;
   min-height: 127.26vh;
   position: relative;
+  padding: 0 15px; /* Reduced padding */
 }
 
 .book-page {
@@ -1028,13 +1273,27 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   top: 0;
 }
 
+.left-page {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+  margin-right: 0 !important;
+}
+
+.right-page {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  box-shadow: 5px 0 15px rgba(0, 0, 0, 0.2);
+  margin-left: 0 !important;
+}
+
 /* NEW: Book Spine/Gutter */
 .book-spine {
   width: 20px;
   background: linear-gradient(to right, 
-    rgba(0, 0, 0, 0.1) 0%, 
+    rgba(0, 0, 0, 0.15) 0%, 
     rgba(0, 0, 0, 0.05) 50%, 
-    rgba(0, 0, 0, 0.1) 100%
+    rgba(0, 0, 0, 0.15) 100%
   );
   min-height: 127.26vh;
   flex-shrink: 0;
@@ -1065,6 +1324,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   font-family: 'Caveat', cursive;
 }
 
+/* Responsive adjustments */
 @media (max-width: 1200px) {
   .editor-content {
     transform: scale(0.7);
@@ -1097,6 +1357,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   .book-spread {
     flex-direction: column;
     gap: 20px;
+    padding: 0 15px;
   }
   
   .book-spine {
