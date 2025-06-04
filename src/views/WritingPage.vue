@@ -153,65 +153,91 @@
               />
             </template>
 
-            <!-- Double Page View: Side by Side like Open Book -->
+            <!-- Double Page View: Enhanced Book-like Experience -->
             <template v-else>
-              <div class="book-spread" :class="{ 'turning': isPageTurning }">
-                <!-- Left Page -->
-                <div class="book-page left-page">
-                  <ChapterPage
-                    v-if="pages.length > 0 && currentDoublePageIndex === 0"
-                    :page="pages[0]"
-                    :pageIndex="0"
-                    :isDoublePageLeft="true"
-                    :isInDoublePageMode="true"
-                    @update:title="updatePageTitle"
-                    @update:content="updatePageContent"
-                    @create-next-page="handleCreateNextPage"
-                    @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
-                    @focus-next-page="handleFocusNextPage"
-                    ref="chapterPageRef"
-                  />
-                  <NormalPage
-                    v-else-if="leftPageData"
-                    :key="leftPageData.id"
-                    :page="leftPageData"
-                    :pageIndex="leftPageIndex"
-                    :isDoublePageLeft="true"
-                    :isInDoublePageMode="true"
-                    @update:content="updatePageContent"
-                    @create-next-page="handleCreateNextPage"
-                    @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
-                    @focus-next-page="handleFocusNextPage"
-                    @delete-current-page="handleDeletePage"
-                    :ref="el => setNormalPageRef(el, leftPageIndex)"
-                  />
-                  <div v-else class="empty-page">
-                    <div class="empty-page-content">No content</div>
+              <div class="book-container">
+                <!-- Current Spread -->
+                <div class="book-spread" :class="{ 'turning': isPageTurning }" ref="currentSpread">
+                  <!-- Left Page -->
+                  <div class="book-page left-page">
+                    <div class="page-wrapper">
+                      <ChapterPage
+                        v-if="pages.length > 0 && currentDoublePageIndex === 0"
+                        :page="pages[0]"
+                        :pageIndex="0"
+                        :isDoublePageLeft="true"
+                        :isInDoublePageMode="true"
+                        @update:title="updatePageTitle"
+                        @update:content="updatePageContent"
+                        @create-next-page="handleCreateNextPage"
+                        @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
+                        @focus-next-page="handleFocusNextPage"
+                        ref="chapterPageRef"
+                      />
+                      <NormalPage
+                        v-else-if="leftPageData"
+                        :key="leftPageData.id"
+                        :page="leftPageData"
+                        :pageIndex="leftPageIndex"
+                        :isDoublePageLeft="true"
+                        :isInDoublePageMode="true"
+                        @update:content="updatePageContent"
+                        @create-next-page="handleCreateNextPage"
+                        @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
+                        @focus-next-page="handleFocusNextPage"
+                        @delete-current-page="handleDeletePage"
+                        :ref="el => setNormalPageRef(el, leftPageIndex)"
+                      />
+                      <div v-else class="empty-page">
+                        <div class="empty-page-content">No content</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Book Spine/Gutter -->
+                  <div class="book-spine"></div>
+
+                  <!-- Right Page with Enhanced Animation -->
+                  <div class="book-page right-page" ref="rightPageElement">
+                    <div class="page-wrapper" ref="rightPageWrapper">
+                      <!-- Page Back (what shows when page is flipped) -->
+                      <div class="page-back" ref="pageBack">
+                        <div class="content-isolation-wrapper">
+                          <div class="page-back-content">
+                            <!-- Next spread content will be shown here during transition -->
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Page Front (current content) -->
+                      <div class="page-front" ref="pageFront">
+                        <div class="content-isolation-wrapper">
+                          <NormalPage
+                            v-if="rightPageData"
+                            :key="rightPageData.id"
+                            :page="rightPageData"
+                            :pageIndex="rightPageIndex"
+                            :isDoublePageRight="true"
+                            :isInDoublePageMode="true"
+                            @update:content="updatePageContent"
+                            @create-next-page="handleCreateNextPage"
+                            @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
+                            @focus-next-page="handleFocusNextPage"
+                            @delete-current-page="handleDeletePage"
+                            :ref="el => setNormalPageRef(el, rightPageIndex)"
+                          />
+                          <div v-else class="empty-page">
+                            <div class="empty-page-content">No content</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Book Spine/Gutter -->
-                <div class="book-spine"></div>
-
-                <!-- Right Page -->
-                <div class="book-page right-page">
-                  <NormalPage
-                    v-if="rightPageData"
-                    :key="rightPageData.id"
-                    :page="rightPageData"
-                    :pageIndex="rightPageIndex"
-                    :isDoublePageRight="true"
-                    :isInDoublePageMode="true"
-                    @update:content="updatePageContent"
-                    @create-next-page="handleCreateNextPage"
-                    @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
-                    @focus-next-page="handleFocusNextPage"
-                    @delete-current-page="handleDeletePage"
-                    :ref="el => setNormalPageRef(el, rightPageIndex)"
-                  />
-                  <div v-else class="empty-page">
-                    <div class="empty-page-content">No content</div>
-                  </div>
+                <!-- Next Spread (hidden, used for seamless transition) -->
+                <div class="book-spread next-spread" ref="nextSpread" v-show="false">
+                  <!-- This will contain the next spread content -->
                 </div>
               </div>
             </template>
@@ -225,7 +251,7 @@
               class="pagination-btn" 
               title="Previous spread"
               @click="previousSpread"
-              :disabled="currentDoublePageIndex <= 0"
+              :disabled="currentDoublePageIndex <= 0 || isPageTurning"
             >
               <span class="icon-arrow-left"></span> Previous
             </button>
@@ -239,8 +265,8 @@
             <button 
               class="pagination-btn" 
               title="Next spread"
-              @click="nextSpread"
-              :disabled="!canGoToNextSpread"
+              @click="nextSpreadHandler"
+              :disabled="!canGoToNextSpread || isPageTurning"
             >
               Next <span class="icon-arrow-right"></span>
             </button>
@@ -280,8 +306,16 @@ let zoomTimeout = null;
 
 // View mode state
 const isDoublePage = ref(false);
-const currentDoublePageIndex = ref(0); // For double page navigation
-const isPageTurning = ref(false); // For page turn animation
+const currentDoublePageIndex = ref(0);
+const isPageTurning = ref(false);
+
+// Enhanced page turning refs
+const rightPageElement = ref(null);
+const rightPageWrapper = ref(null);
+const pageFront = ref(null);
+const pageBack = ref(null);
+const currentSpread = ref(null);
+const nextSpread = ref(null);
 
 // Page management
 const pages = ref([
@@ -308,26 +342,23 @@ const totalPages = computed(() => {
   return pages.value.length;
 });
 
-// NEW: Book-like double page computed properties
 const leftPageIndex = computed(() => {
   if (currentDoublePageIndex.value === 0) {
-    return 0; // Chapter page is always on the left of first spread
+    return 0;
   }
-  // For subsequent spreads: spread 1 = pages 2,3; spread 2 = pages 4,5; etc.
   return (currentDoublePageIndex.value * 2);
 });
 
 const rightPageIndex = computed(() => {
   if (currentDoublePageIndex.value === 0) {
-    return 1; // First normal page is on the right of first spread
+    return 1;
   }
-  // For subsequent spreads: spread 1 = pages 2,3; spread 2 = pages 4,5; etc.
   return (currentDoublePageIndex.value * 2) + 1;
 });
 
 const leftPageData = computed(() => {
   if (currentDoublePageIndex.value === 0) {
-    return null; // Chapter page is handled separately
+    return null;
   }
   const index = leftPageIndex.value;
   return index < pages.value.length ? pages.value[index] : null;
@@ -338,13 +369,11 @@ const rightPageData = computed(() => {
   return index < pages.value.length ? pages.value[index] : null;
 });
 
-// NEW: Check if we can go to next spread
 const canGoToNextSpread = computed(() => {
   const maxPageIndex = Math.max(leftPageIndex.value, rightPageIndex.value);
   return maxPageIndex < pages.value.length - 1;
 });
 
-// NEW: Get display page numbers for bottom nav
 const getDisplayPageNumbers = () => {
   const left = leftPageIndex.value + 1;
   const right = rightPageIndex.value + 1;
@@ -369,58 +398,151 @@ const toggleViewMode = (mode) => {
   isDoublePage.value = mode === 'double';
   
   if (!wasDoublePage && isDoublePage.value) {
-    zoomLevel.value = 70; // Smaller zoom for double page
-    currentDoublePageIndex.value = 0; // Start from first spread
+    zoomLevel.value = 70;
+    currentDoublePageIndex.value = 0;
     triggerZoomChange();
   } else if (wasDoublePage && !isDoublePage.value) {
-    zoomLevel.value = 90; // Normal zoom for single page
+    zoomLevel.value = 90;
     triggerZoomChange();
   }
 };
 
-// NEW: Realistic page turn animation
-const performPageTurn = async () => {
+// ENHANCED: Realistic paper turning animation with physics
+const performPageTurn = async (direction = 'next') => {
+  if (isPageTurning.value) return;
+  
   isPageTurning.value = true;
   
-  // Add turning class to trigger animation
-  const bookSpread = document.querySelector('.book-spread');
-  if (bookSpread) {
-    bookSpread.classList.add('turning');
-    
-    // Wait for page flip animation to complete
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Remove turning class and add new spread class
-    bookSpread.classList.remove('turning');
-    bookSpread.classList.add('new-spread');
-    
-    // Remove new spread class after fade in completes
-    setTimeout(() => {
-      bookSpread.classList.remove('new-spread');
-    }, 800);
+  const rightPage = rightPageElement.value;
+  const pageWrapper = rightPageWrapper.value;
+  const front = pageFront.value;
+  const back = pageBack.value;
+  
+  if (!rightPage || !pageWrapper || !front || !back) {
+    isPageTurning.value = false;
+    return;
   }
+
+  // Prepare the page back with next content preview
+  if (direction === 'next') {
+    prepareNextPageContent();
+  }
+
+  // Add turning class to trigger CSS animations
+  rightPage.classList.add('turning');
+  pageWrapper.classList.add('page-turning');
+  
+  // Create realistic paper physics with multiple stages
+  await animatePageTurn(direction);
+  
+  // Clean up and show new content
+  rightPage.classList.remove('turning');
+  pageWrapper.classList.remove('page-turning');
   
   isPageTurning.value = false;
 };
 
+// ENHANCED: Multi-stage page turning animation
+const animatePageTurn = async (direction) => {
+  const duration = 1200; // Longer, more realistic duration
+  const stages = [
+    { progress: 0, rotation: 0, curl: 0, shadow: 0 },
+    { progress: 0.2, rotation: -15, curl: 5, shadow: 0.1 },
+    { progress: 0.4, rotation: -45, curl: 15, shadow: 0.3 },
+    { progress: 0.6, rotation: -90, curl: 25, shadow: 0.5 },
+    { progress: 0.8, rotation: -135, curl: 15, shadow: 0.3 },
+    { progress: 1, rotation: -180, curl: 0, shadow: 0 }
+  ];
+
+  const rightPage = rightPageElement.value;
+  const pageWrapper = rightPageWrapper.value;
+
+  for (let i = 0; i < stages.length; i++) {
+    const stage = stages[i];
+    const nextStage = stages[i + 1];
+    
+    if (nextStage) {
+      await animateToStage(stage, nextStage, duration / stages.length);
+    }
+  }
+};
+
+// Animate between two stages with easing
+const animateToStage = (fromStage, toStage, duration) => {
+  return new Promise(resolve => {
+    const startTime = performance.now();
+    const rightPage = rightPageElement.value;
+    const pageWrapper = rightPageWrapper.value;
+    
+    const animate = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Use cubic-bezier easing for natural paper movement
+      const eased = easeOutCubic(progress);
+      
+      // Interpolate between stages
+      const rotation = lerp(fromStage.rotation, toStage.rotation, eased);
+      const curl = lerp(fromStage.curl, toStage.curl, eased);
+      const shadow = lerp(fromStage.shadow, toStage.shadow, eased);
+      
+      // Apply transformations
+      if (pageWrapper) {
+        pageWrapper.style.transform = `
+          rotateY(${rotation}deg) 
+          rotateX(${curl * 0.3}deg)
+          translateZ(${curl}px)
+        `;
+        pageWrapper.style.filter = `drop-shadow(${shadow * 10}px 0 ${shadow * 20}px rgba(0,0,0,${shadow * 0.4}))`;
+      }
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        resolve();
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  });
+};
+
+// Easing function for natural movement
+const easeOutCubic = (t) => {
+  return 1 - Math.pow(1 - t, 3);
+};
+
+// Linear interpolation
+const lerp = (start, end, factor) => {
+  return start + (end - start) * factor;
+};
+
+// Prepare next page content for smooth transition
+const prepareNextPageContent = () => {
+  const nextLeftIndex = (currentDoublePageIndex.value + 1) * 2;
+  const nextRightIndex = nextLeftIndex + 1;
+  
+  // This would populate the page back with preview of next content
+  // Implementation depends on your specific content structure
+};
+
 const previousSpread = async () => {
-  if (currentDoublePageIndex.value > 0) {
-    await performPageTurn();
+  if (currentDoublePageIndex.value > 0 && !isPageTurning.value) {
+    await performPageTurn('prev');
     currentDoublePageIndex.value--;
   }
 };
 
-const nextSpread = async () => {
-  if (canGoToNextSpread.value) {
-    await performPageTurn();
+const nextSpreadHandler = async () => {
+  if (canGoToNextSpread.value && !isPageTurning.value) {
+    await performPageTurn('next');
     currentDoublePageIndex.value++;
   }
 };
 
-// NEW: Auto-advance to next spread when right page is full
 const autoAdvanceToNextSpread = async () => {
   console.log('Auto-advancing to next spread...');
-  await performPageTurn();
+  await performPageTurn('next');
   currentDoublePageIndex.value++;
 };
 
@@ -466,17 +588,14 @@ const updatePageContent = ({ index, content }) => {
   }
 };
 
-// NEW: Handle overflow in double page mode with book-like behavior
 const handlePushOverflowDoublePageMode = async ({ pageIndex, nextPageIndex, overflowContent }) => {
   console.log(`Double page mode: Pushing overflow from page ${pageIndex} to ${nextPageIndex}`, { overflowContent });
   
-  // Check if this is the right page of the current spread
   const isRightPageOfSpread = pageIndex === rightPageIndex.value;
   
   if (isRightPageOfSpread) {
     console.log('Right page of spread is full, creating new spread...');
     
-    // Create new pages for the next spread
     const newLeftPage = {
       id: Date.now(),
       type: 'normal',
@@ -489,13 +608,10 @@ const handlePushOverflowDoublePageMode = async ({ pageIndex, nextPageIndex, over
       content: ''
     };
     
-    // Add both pages to ensure we have a complete spread
     pages.value.push(newLeftPage, newRightPage);
     
-    // Auto-advance to the new spread
     await autoAdvanceToNextSpread();
     
-    // Focus the new left page where the content was moved
     nextTick(() => {
       const newLeftPageRef = normalPageRefs.value[pages.value.length - 2];
       if (newLeftPageRef) {
@@ -503,16 +619,13 @@ const handlePushOverflowDoublePageMode = async ({ pageIndex, nextPageIndex, over
       }
     });
   } else {
-    // This is the left page or chapter page, handle normally
     if (nextPageIndex < pages.value.length) {
-      // Next page exists, prepend content to it
       const nextPageRef = nextPageIndex === 0 ? chapterPageRef.value : normalPageRefs.value[nextPageIndex];
       
       if (nextPageRef) {
         nextPageRef.prependContent(overflowContent);
       }
     } else {
-      // Next page doesn't exist, create it
       handleCreateNextPage({ 
         pageIndex, 
         overflowContent 
@@ -521,25 +634,18 @@ const handlePushOverflowDoublePageMode = async ({ pageIndex, nextPageIndex, over
   }
 };
 
-// Handle pushing overflow content to next page (for single page mode)
 const handlePushOverflow = ({ pageIndex, nextPageIndex, overflowContent }) => {
   console.log(`Single page mode: Pushing overflow from page ${pageIndex} to ${nextPageIndex}`, { overflowContent });
   
-  // Check if next page exists
   if (nextPageIndex < pages.value.length) {
-    // Next page exists, prepend overflow content to it
     console.log('Next page exists, prepending content');
     
     const nextPageRef = nextPageIndex === 0 ? chapterPageRef.value : normalPageRefs.value[nextPageIndex];
     
     if (nextPageRef) {
-      // Prepend content to next page
       nextPageRef.prependContent(overflowContent);
-      
-      // Focus will stay on current page where user is typing
     }
   } else {
-    // Next page doesn't exist, create it
     console.log('Next page does not exist, creating new page');
     handleCreateNextPage({ 
       pageIndex, 
@@ -548,7 +654,6 @@ const handlePushOverflow = ({ pageIndex, nextPageIndex, overflowContent }) => {
   }
 };
 
-// Handle creating next page when content overflows
 const handleCreateNextPage = ({ pageIndex, overflowContent }) => {
   const newPage = {
     id: Date.now(),
@@ -556,10 +661,8 @@ const handleCreateNextPage = ({ pageIndex, overflowContent }) => {
     content: overflowContent
   };
   
-  // Insert new page after current page
   pages.value.splice(pageIndex + 1, 0, newPage);
   
-  // Focus the new page
   nextTick(() => {
     const newPageRef = normalPageRefs.value[pageIndex + 1];
     if (newPageRef) {
@@ -568,27 +671,21 @@ const handleCreateNextPage = ({ pageIndex, overflowContent }) => {
   });
 };
 
-// Handle deleting current page
 const handleDeletePage = (pageIndex) => {
-  // Don't delete if it's the only page or the chapter page
   if (pageIndex <= 0 || pages.value.length <= 1) {
     return;
   }
   
-  // Remove the page
   pages.value.splice(pageIndex, 1);
   
-  // Focus the previous page
   nextTick(() => {
     const prevIndex = pageIndex - 1;
     
     if (prevIndex === 0) {
-      // Focus the chapter page
       if (chapterPageRef.value) {
         chapterPageRef.value.focusContentAtEnd();
       }
     } else {
-      // Focus the previous normal page
       const prevPageRef = normalPageRefs.value[prevIndex];
       if (prevPageRef) {
         prevPageRef.focusAtEnd();
@@ -598,11 +695,9 @@ const handleDeletePage = (pageIndex) => {
 };
 
 const goToHome = () => {
-  // Dispatch custom event to change page
   window.dispatchEvent(new CustomEvent('showPage', { detail: { page: 'home' } }));
 };
 
-// Initialize zoom when component is mounted
 onMounted(() => {
   triggerZoomChange();
 });
@@ -615,18 +710,15 @@ const emit = defineEmits([
   'focus-next-page'
 ]);
 
-// Handle focusing next page when cursor moves to overflow content
 const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   console.log(`Focusing next page ${nextPageIndex} at offset ${cursorOffset}`);
   
   nextTick(() => {
     if (nextPageIndex === 0) {
-      // Focus chapter page
       if (chapterPageRef.value) {
         chapterPageRef.value.focusAtPosition(cursorOffset);
       }
     } else {
-      // Focus normal page
       const nextPageRef = normalPageRefs.value[nextPageIndex];
       if (nextPageRef) {
         nextPageRef.focusAtPosition(cursorOffset);
@@ -637,7 +729,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
 </script>
 
 <style scoped>
-/* All the existing styles remain the same until editor-content */
+/* Base styles remain the same until editor-content */
 .writing-page-container {
   display: flex;
   flex-direction: column;
@@ -1079,7 +1171,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   min-height: calc(100% - 60px);
 }
 
-/* UPDATED: Editor Content for Single and Double Page Views */
+/* ENHANCED: Editor Content with Better Paper Physics */
 .editor-content {
   background-color: #fff;
   border: 1px solid #e0e0e0;
@@ -1101,29 +1193,48 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   max-width: 100%;
 }
 
-/* UPDATED: Double Page Layout - Side by Side like Open Book */
+/* ENHANCED: Double Page Layout with Realistic Book Environment */
 .editor-content.double-page {
   width: auto;
   min-width: 180vh;
   max-width: calc(100vw - 320px);
   min-height: auto;
   padding: 40px;
-  background: #3a2a1d;
+  background: linear-gradient(135deg, #2d1810 0%, #3a2a1d 50%, #2d1810 100%);
   border: none;
   box-shadow: none;
+  position: relative;
 }
 
-/* Remove the old tilting animation and replace with realistic page turning */
-.editor-content.page-turning {
-  transition: none; /* Remove the tilting effect */
+/* Add subtle book texture */
+.editor-content.double-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.02) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255,255,255,0.02) 0%, transparent 50%),
+    linear-gradient(45deg, transparent 49%, rgba(255,255,255,0.01) 50%, transparent 51%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* Remove the old pageTurn animation */
-.editor-content.page-turning .book-spread {
-  animation: none;
+/* ENHANCED: Book Container with Perspective */
+.book-container {
+  position: relative;
+  perspective: 2000px;
+  perspective-origin: center center;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* NEW: Realistic page turning animation */
+/* ENHANCED: Book Spread with Realistic Physics */
 .book-spread {
   display: flex;
   align-items: flex-start;
@@ -1133,128 +1244,11 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   min-height: 127.26vh;
   position: relative;
   padding: 0 15px;
-  perspective: 1000px; /* Add perspective for 3D effect */
-}
-
-/* Page turning states */
-.book-spread.turning {
-  overflow: visible;
-}
-
-.book-spread.turning .right-page {
-  transform-origin: left center;
-  animation: pageFlip 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  z-index: 10;
-  position: relative;
-}
-
-.book-spread.turning .right-page::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    to right,
-    rgba(0, 0, 0, 0) 0%,
-    rgba(0, 0, 0, 0.1) 50%,
-    rgba(0, 0, 0, 0.3) 100%
-  );
-  opacity: 0;
-  animation: pageShadow 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* The actual page flip animation */
-@keyframes pageFlip {
-  0% {
-    transform: rotateY(0deg);
-  }
-  50% {
-    transform: rotateY(-90deg);
-  }
-  100% {
-    transform: rotateY(-180deg);
-    opacity: 0;
-  }
-}
-
-/* Shadow effect during page turn */
-@keyframes pageShadow {
-  0% {
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-/* New spread fade in */
-.book-spread.new-spread {
-  opacity: 0;
-  animation: spreadFadeIn 0.4s ease-out 0.4s forwards;
-}
-
-@keyframes spreadFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Page curl effect for more realism */
-.book-spread.turning .right-page .page {
   transform-style: preserve-3d;
-  backface-visibility: hidden;
+  transition: all 0.3s ease;
 }
 
-/* Add subtle page bend during turn */
-.book-spread.turning .right-page .page::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 20px;
-  height: 100%;
-  background: linear-gradient(
-    to left,
-    rgba(0, 0, 0, 0.1) 0%,
-    transparent 100%
-  );
-  opacity: 0;
-  animation: pageBend 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-@keyframes pageBend {
-  0%, 100% {
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-/* NEW: Book Spread Layout */
-.book-spread {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 0;
-  width: 100%;
-  min-height: 127.26vh;
-  position: relative;
-  padding: 0 15px; /* Reduced padding */
-}
-
+/* ENHANCED: Book Pages with Paper Texture */
 .book-page {
   flex: 0 0 auto;
   width: 90vh;
@@ -1265,6 +1259,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   top: 0;
   margin: 0;
   padding: 0;
+  transform-style: preserve-3d;
 }
 
 .book-page > * {
@@ -1273,43 +1268,328 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   top: 0;
 }
 
+/* ENHANCED: Page Wrapper for Complex Animations */
+.page-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: all 0.1s ease;
+}
+
+/* FIXED: Completely isolate content from 3D transforms */
+.page-front,
+.page-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  transform-style: flat; /* Change from preserve-3d to flat */
+}
+
+.page-front {
+  z-index: 2;
+  transform: none; /* Remove any transforms */
+}
+
+.page-back {
+  z-index: 1;
+  transform: rotateY(180deg); /* Remove scaleX(-1) */
+}
+
+/* CRITICAL FIX: Isolate all text content from parent transforms */
+.page-front > *,
+.page-back > *,
+.page-wrapper > *,
+.book-page > * {
+  transform: none !important;
+  direction: ltr !important;
+  text-align: left !important;
+  unicode-bidi: normal !important;
+}
+
+/* Ensure page components are not affected by 3D transforms */
+.book-page .page,
+.book-page .page-content,
+.book-page .page-title,
+.book-page [contenteditable] {
+  transform: none !important;
+  direction: ltr !important;
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+}
+
+/* Fix placeholder text specifically */
+.book-page .page-content:empty::before,
+.book-page .page-content.empty::before,
+.book-page .page-title:empty::before,
+.book-page .page-title.empty::before {
+  transform: none !important;
+  direction: ltr !important;
+  display: block !important;
+  text-align: left !important;
+}
+
+/* Alternative approach: Use a content isolation wrapper */
+.content-isolation-wrapper {
+  transform: none !important;
+  direction: ltr !important;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+
+/* Ensure turning animation only affects the page wrapper, not content */
+.book-page.right-page.turning .page-wrapper {
+  transform-origin: left center;
+  animation: realisticPageTurnIsolated 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  z-index: 10;
+  position: relative;
+}
+
+/* Updated animation that doesn't affect content */
+@keyframes realisticPageTurnIsolated {
+  0% {
+    transform: rotateY(0deg) rotateX(0deg) translateZ(0px);
+    filter: drop-shadow(0px 0 0px rgba(0,0,0,0));
+  }
+  
+  15% {
+    transform: rotateY(-12deg) rotateX(2deg) translateZ(8px);
+    filter: drop-shadow(3px 0 8px rgba(0,0,0,0.15));
+  }
+  
+  30% {
+    transform: rotateY(-35deg) rotateX(5deg) translateZ(20px);
+    filter: drop-shadow(8px 0 15px rgba(0,0,0,0.25));
+  }
+  
+  50% {
+    transform: rotateY(-90deg) rotateX(8deg) translateZ(30px);
+    filter: drop-shadow(15px 0 25px rgba(0,0,0,0.4));
+  }
+  
+  70% {
+    transform: rotateY(-145deg) rotateX(5deg) translateZ(20px);
+    filter: drop-shadow(8px 0 15px rgba(0,0,0,0.25));
+  }
+  
+  85% {
+    transform: rotateY(-168deg) rotateX(2deg) translateZ(8px);
+    filter: drop-shadow(3px 0 8px rgba(0,0,0,0.15));
+  }
+  
+  100% {
+    transform: rotateY(-180deg) rotateX(0deg) translateZ(0px);
+    filter: drop-shadow(0px 0 0px rgba(0,0,0,0));
+    opacity: 0;
+  }
+}
+
+/* Prevent any inherited transforms on content elements */
+.book-page *[contenteditable],
+.book-page .page-content,
+.book-page .page-title {
+  transform: none !important;
+  direction: ltr !important;
+  text-align: left !important;
+  writing-mode: horizontal-tb !important;
+  unicode-bidi: normal !important;
+}
+
+/* Force correct text direction on all text elements */
+.book-page * {
+  direction: ltr !important;
+  unicode-bidi: normal !important;
+}
+
+/* ENHANCED: Realistic Page Turning Animation */
+.book-page.right-page.turning .page-wrapper {
+  transform-origin: left center;
+  animation: realisticPageTurn 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  z-index: 10;
+  position: relative;
+}
+
+/* Ensure content inside turning pages maintains correct orientation */
+.book-page.right-page.turning .page-wrapper > * {
+  transform: none !important;
+  direction: ltr !important;
+}
+
+/* ENHANCED: Multi-stage realistic page turn */
+@keyframes realisticPageTurn {
+  0% {
+    transform: rotateY(0deg) rotateX(0deg) translateZ(0px);
+    filter: drop-shadow(0px 0 0px rgba(0,0,0,0));
+  }
+  
+  15% {
+    transform: rotateY(-12deg) rotateX(2deg) translateZ(8px);
+    filter: drop-shadow(3px 0 8px rgba(0,0,0,0.15));
+  }
+  
+  30% {
+    transform: rotateY(-35deg) rotateX(5deg) translateZ(20px);
+    filter: drop-shadow(8px 0 15px rgba(0,0,0,0.25));
+  }
+  
+  50% {
+    transform: rotateY(-90deg) rotateX(8deg) translateZ(30px);
+    filter: drop-shadow(15px 0 25px rgba(0,0,0,0.4));
+  }
+  
+  70% {
+    transform: rotateY(-145deg) rotateX(5deg) translateZ(20px);
+    filter: drop-shadow(8px 0 15px rgba(0,0,0,0.25));
+  }
+  
+  85% {
+    transform: rotateY(-168deg) rotateX(2deg) translateZ(8px);
+    filter: drop-shadow(3px 0 8px rgba(0,0,0,0.15));
+  }
+  
+  100% {
+    transform: rotateY(-180deg) rotateX(0deg) translateZ(0px);
+    filter: drop-shadow(0px 0 0px rgba(0,0,0,0));
+    opacity: 0;
+  }
+}
+
+/* ENHANCED: Paper curl effect during turn */
+.book-page.right-page.turning .page-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.05) 30%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.15) 70%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+  opacity: 0;
+  animation: paperCurlShadow 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  pointer-events: none;
+  z-index: 3;
+  border-radius: 0 8px 8px 0;
+}
+
+@keyframes paperCurlShadow {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ENHANCED: Page edge highlight during turn */
+.book-page.right-page.turning .page-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0.8) 100%
+  );
+  opacity: 0;
+  animation: pageEdgeHighlight 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 4;
+}
+
+@keyframes pageEdgeHighlight {
+  0%, 100% {
+    opacity: 0;
+  }
+  30%, 70% {
+    opacity: 1;
+  }
+}
+
+/* ENHANCED: Left and Right Page Styling */
 .left-page {
   border-top-left-radius: 8px;
   border-bottom-left-radius: 8px;
-  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    -8px 0 20px rgba(0, 0, 0, 0.15),
+    inset 3px 0 6px rgba(0, 0, 0, 0.05);
   margin-right: 0 !important;
 }
 
 .right-page {
   border-top-right-radius: 8px;
   border-bottom-right-radius: 8px;
-  box-shadow: 5px 0 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    8px 0 20px rgba(0, 0, 0, 0.15),
+    inset -3px 0 6px rgba(0, 0, 0, 0.05);
   margin-left: 0 !important;
 }
 
-/* NEW: Book Spine/Gutter */
+/* ENHANCED: Book Spine with Realistic Binding */
 .book-spine {
-  width: 20px;
+  width: 24px;
   background: linear-gradient(to right, 
-    rgba(0, 0, 0, 0.15) 0%, 
-    rgba(0, 0, 0, 0.05) 50%, 
-    rgba(0, 0, 0, 0.15) 100%
+    rgba(0, 0, 0, 0.2) 0%, 
+    rgba(0, 0, 0, 0.1) 20%,
+    rgba(0, 0, 0, 0.05) 40%,
+    rgba(0, 0, 0, 0.05) 60%,
+    rgba(0, 0, 0, 0.1) 80%,
+    rgba(0, 0, 0, 0.2) 100%
   );
   min-height: 127.26vh;
   flex-shrink: 0;
+  position: relative;
+  box-shadow: 
+    inset 2px 0 4px rgba(0, 0, 0, 0.1),
+    inset -2px 0 4px rgba(0, 0, 0, 0.1);
 }
 
-/* NEW: Empty Page Styling */
+/* Add binding texture */
+.book-spine::before {
+  content: '';
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 80%;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(139, 69, 19, 0.3) 0px,
+    rgba(139, 69, 19, 0.3) 2px,
+    transparent 2px,
+    transparent 8px
+  );
+}
+
+/* ENHANCED: Empty Page with Paper Texture */
 .empty-page {
-  background: white;
+  background: 
+    linear-gradient(135deg, #fefefe 0%, #fdfdfd 50%, #fefefe 100%),
+    radial-gradient(circle at 30% 30%, rgba(0,0,0,0.02) 0%, transparent 50%);
   width: 90vh;
   max-width: 100%;
   height: 127.26vh;
   padding: 6vh 8vh;
   box-sizing: border-box;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   position: relative;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #e8e8e8;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1318,58 +1598,20 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
 }
 
 .empty-page-content {
-  color: #999;
+  color: #bbb;
   font-style: italic;
   font-size: 1.2rem;
   font-family: 'Caveat', cursive;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
-/* Responsive adjustments */
-@media (max-width: 1200px) {
-  .editor-content {
-    transform: scale(0.7);
-  }
-  
-  .editor-content.double-page {
-    transform: scale(0.6);
-  }
-  
-  .book-page {
-    width: 70vh;
-  }
+/* ENHANCED: Disable interactions during page turn */
+.book-spread.turning {
+  pointer-events: none;
 }
 
-@media (max-width: 768px) {
-  .editor-content {
-    width: 90vw;
-    height: calc(90vw * 1.414);
-    transform: none;
-    padding: 4vh 5vw;
-    margin: 2vh auto;
-  }
-  
-  .editor-content.double-page {
-    flex-direction: column;
-    width: 90vw;
-    transform: none;
-  }
-  
-  .book-spread {
-    flex-direction: column;
-    gap: 20px;
-    padding: 0 15px;
-  }
-  
-  .book-spine {
-    width: 100%;
-    height: 20px;
-    min-height: auto;
-  }
-  
-  .book-page {
-    width: 100%;
-    max-width: none;
-  }
+.book-spread.turning * {
+  user-select: none;
 }
 
 /* Bottom Navigation */
@@ -1504,6 +1746,20 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
 }
 
 /* Responsive adjustments */
+@media (max-width: 1200px) {
+  .editor-content {
+    transform: scale(0.7);
+  }
+  
+  .editor-content.double-page {
+    transform: scale(0.6);
+  }
+  
+  .book-page {
+    width: 70vh;
+  }
+}
+
 @media (max-width: 768px) {
   .floating-actions {
     bottom: 15vh;
@@ -1514,6 +1770,37 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
     width: 44px;
     height: 44px;
     font-size: 1.1rem;
+  }
+  
+  .editor-content {
+    width: 90vw;
+    height: calc(90vw * 1.414);
+    transform: none;
+    padding: 4vh 5vw;
+    margin: 2vh auto;
+  }
+  
+  .editor-content.double-page {
+    flex-direction: column;
+    width: 90vw;
+    transform: none;
+  }
+  
+  .book-spread {
+    flex-direction: column;
+    gap: 20px;
+    padding: 0 15px;
+  }
+  
+  .book-spine {
+    width: 100%;
+    height: 20px;
+    min-height: auto;
+  }
+  
+  .book-page {
+    width: 100%;
+    max-width: none;
   }
 }
 
