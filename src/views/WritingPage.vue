@@ -366,7 +366,16 @@ const leftPageData = computed(() => {
 
 const rightPageData = computed(() => {
   const index = rightPageIndex.value;
-  return index < pages.value.length ? pages.value[index] : null;
+  // FIXED: Only return page data if the page actually exists AND has content
+  // This prevents pre-creating pages with content in subsequent spreads
+  if (index < pages.value.length) {
+    const page = pages.value[index];
+    // Only show the page if it has actual content (not empty)
+    if (page && page.content && page.content.trim() !== '') {
+      return page;
+    }
+  }
+  return null; // This will show "No content" until overflow creates the page
 });
 
 const canGoToNextSpread = computed(() => {
@@ -602,33 +611,40 @@ const handlePushOverflowDoublePageMode = async ({ pageIndex, nextPageIndex, over
       content: overflowContent
     };
     
-    const newRightPage = {
-      id: Date.now() + 1,
-      type: 'normal',
-      content: ''
-    };
-    
-    pages.value.push(newLeftPage, newRightPage);
+    pages.value.push(newLeftPage);
     
     await autoAdvanceToNextSpread();
     
     nextTick(() => {
-      const newLeftPageRef = normalPageRefs.value[pages.value.length - 2];
+      const newLeftPageRef = normalPageRefs.value[pages.value.length - 1];
       if (newLeftPageRef) {
         newLeftPageRef.focusAtEnd();
       }
     });
   } else {
+    // FIXED: Handle overflow to right page properly
     if (nextPageIndex < pages.value.length) {
+      // Page exists, prepend content
       const nextPageRef = nextPageIndex === 0 ? chapterPageRef.value : normalPageRefs.value[nextPageIndex];
       
       if (nextPageRef) {
         nextPageRef.prependContent(overflowContent);
       }
     } else {
-      handleCreateNextPage({ 
-        pageIndex, 
-        overflowContent 
+      // Page doesn't exist, create it
+      const newPage = {
+        id: Date.now(),
+        type: 'normal',
+        content: overflowContent
+      };
+      
+      pages.value.push(newPage);
+      
+      nextTick(() => {
+        const newPageRef = normalPageRefs.value[nextPageIndex];
+        if (newPageRef) {
+          newPageRef.focusAtEnd();
+        }
       });
     }
   }
@@ -729,7 +745,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
 </script>
 
 <style scoped>
-/* Base styles remain the same until editor-content */
+/* All the existing styles remain the same */
 .writing-page-container {
   display: flex;
   flex-direction: column;
