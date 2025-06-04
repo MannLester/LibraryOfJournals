@@ -135,6 +135,7 @@
                 @create-next-page="handleCreateNextPage"
                 @push-overflow-to-next-page="handlePushOverflow"
                 @focus-next-page="handleFocusNextPage"
+                @page-became-empty="handlePageBecameEmpty"
                 ref="chapterPageRef"
               />
               
@@ -149,6 +150,7 @@
                 @push-overflow-to-next-page="handlePushOverflow"
                 @focus-next-page="handleFocusNextPage"
                 @delete-current-page="handleDeletePage"
+                @page-became-empty="handlePageBecameEmpty"
                 :ref="el => setNormalPageRef(el, index + 1)"
               />
             </template>
@@ -172,6 +174,7 @@
                         @create-next-page="handleCreateNextPage"
                         @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
                         @focus-next-page="handleFocusNextPage"
+                        @page-became-empty="handlePageBecameEmpty"
                         ref="chapterPageRef"
                       />
                       <NormalPage
@@ -186,6 +189,7 @@
                         @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
                         @focus-next-page="handleFocusNextPage"
                         @delete-current-page="handleDeletePage"
+                        @page-became-empty="handlePageBecameEmpty"
                         :ref="el => setNormalPageRef(el, leftPageIndex)"
                       />
                       <div v-else class="empty-page">
@@ -224,6 +228,7 @@
                             @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
                             @focus-next-page="handleFocusNextPage"
                             @delete-current-page="handleDeletePage"
+                            @page-became-empty="handlePageBecameEmpty"
                             :ref="el => setNormalPageRef(el, rightPageIndex)"
                           />
                           <div v-else class="empty-page">
@@ -366,16 +371,12 @@ const leftPageData = computed(() => {
 
 const rightPageData = computed(() => {
   const index = rightPageIndex.value;
-  // FIXED: Only return page data if the page actually exists AND has content
-  // This prevents pre-creating pages with content in subsequent spreads
+  // FIXED: Always show the page if it exists, regardless of content
+  // The page component will handle showing placeholder text if empty
   if (index < pages.value.length) {
-    const page = pages.value[index];
-    // Only show the page if it has actual content (not empty)
-    if (page && page.content && page.content.trim() !== '') {
-      return page;
-    }
+    return pages.value[index];
   }
-  return null; // This will show "No content" until overflow creates the page
+  return null; // This will show "No content" only if page doesn't exist
 });
 
 const canGoToNextSpread = computed(() => {
@@ -597,6 +598,101 @@ const updatePageContent = ({ index, content }) => {
   }
 };
 
+// NEW: Handle when a page becomes empty (all text deleted)
+const handlePageBecameEmpty = async (pageIndex) => {
+  console.log(`Page ${pageIndex} became empty`);
+  
+  if (isDoublePage.value) {
+    // In double page mode, handle navigation when page becomes empty
+    const isLeftPageInSpread = pageIndex === leftPageIndex.value && currentDoublePageIndex.value > 0;
+    const isRightPageInSpread = pageIndex === rightPageIndex.value;
+    
+    console.log('Debug info:', {
+      pageIndex,
+      leftPageIndex: leftPageIndex.value,
+      rightPageIndex: rightPageIndex.value,
+      currentDoublePageIndex: currentDoublePageIndex.value,
+      isLeftPageInSpread,
+      isRightPageInSpread
+    });
+    
+    if (isLeftPageInSpread) {
+      // Left page became empty, go to previous spread
+      console.log('Left page became empty, navigating to previous spread');
+      currentDoublePageIndex.value = currentDoublePageIndex.value - 1;
+      
+      // Focus on the right page of the previous spread
+      setTimeout(() => {
+        const prevRightPageIndex = currentDoublePageIndex.value * 2 + 1;
+        
+        console.log('Focusing on previous right page:', {
+          prevRightPageIndex,
+          currentDoublePageIndex: currentDoublePageIndex.value,
+          calculation: `${currentDoublePageIndex.value} * 2 + 1 = ${prevRightPageIndex}`
+        });
+        
+        // Page 1 (index 0) is the chapter page, Page 2 (index 1) is the first normal page
+        if (prevRightPageIndex === 1) {
+          // This is Page 2 (first normal page) - focus on normal page ref
+          console.log('Focusing on normal page at index 1 (Page 2)');
+          const pageRef = normalPageRefs.value[1];
+          if (pageRef) {
+            pageRef.focusAtEnd();
+          } else {
+            console.log('Normal page ref at index 1 not found');
+          }
+        } else if (prevRightPageIndex === 0) {
+          // This should never happen for right page, but just in case
+          console.log('Focusing on chapter page (this should not happen for right page)');
+          if (chapterPageRef.value) {
+            chapterPageRef.value.focusContentAtEnd();
+          }
+        } else {
+          // Other normal pages
+          console.log(`Focusing on normal page at index ${prevRightPageIndex}`);
+          const pageRef = normalPageRefs.value[prevRightPageIndex];
+          if (pageRef) {
+            pageRef.focusAtEnd();
+          } else {
+            console.log(`Normal page ref at index ${prevRightPageIndex} not found`);
+          }
+        }
+      }, 100);
+    } else if (isRightPageInSpread) {
+      // Right page became empty, focus on left page
+      setTimeout(() => {
+        if (leftPageIndex.value === 0) {
+          // Focus on chapter page
+          console.log('Focusing on chapter page (left page of spread 1)');
+          if (chapterPageRef.value) {
+            chapterPageRef.value.focusContentAtEnd();
+          }
+        } else {
+          // Focus on normal page
+          console.log(`Focusing on normal page at index ${leftPageIndex.value}`);
+          const leftPageRef = normalPageRefs.value[leftPageIndex.value];
+          if (leftPageRef) {
+            leftPageRef.focusAtEnd();
+          }
+        }
+      }, 100);
+    }
+  } else {
+    // In single page mode, focus on previous page
+    const prevIndex = pageIndex - 1;
+    setTimeout(() => {
+      if (prevIndex === 0 && chapterPageRef.value) {
+        chapterPageRef.value.focusContentAtEnd();
+      } else if (prevIndex > 0) {
+        const prevPageRef = normalPageRefs.value[prevIndex];
+        if (prevPageRef) {
+          prevPageRef.focusAtEnd();
+        }
+      }
+    }, 100);
+  }
+};
+
 const handlePushOverflowDoublePageMode = async ({ pageIndex, nextPageIndex, overflowContent }) => {
   console.log(`Double page mode: Pushing overflow from page ${pageIndex} to ${nextPageIndex}`, { overflowContent });
   
@@ -703,36 +799,48 @@ const handleDeletePage = (pageIndex) => {
   // Delete the page
   pages.value.splice(pageIndex, 1);
   
-  // Handle navigation after deletion
+  // Handle navigation and focus after deletion
   nextTick(() => {
     if (isLeftPageInSpread) {
       // If deleting left page in a spread, go back to previous spread
       console.log('Deleted left page in spread, navigating to previous spread');
       currentDoublePageIndex.value = currentSpreadIndex - 1;
       
-      // Focus on the right page of the previous spread
-      const prevRightPageIndex = currentDoublePageIndex.value * 2 + 1;
-      const prevRightPageRef = normalPageRefs.value[prevRightPageIndex];
-      
-      if (prevRightPageIndex === 1 && chapterPageRef.value) {
-        chapterPageRef.value.focusContentAtEnd();
-      } else if (prevRightPageRef) {
-        prevRightPageRef.focusAtEnd();
-      }
+      // Use a longer timeout to ensure DOM is fully updated
+      setTimeout(() => {
+        // Focus on the right page of the previous spread
+        const prevRightPageIndex = currentDoublePageIndex.value * 2 + 1;
+        
+        if (prevRightPageIndex === 1 && chapterPageRef.value) {
+          // Focus on chapter page content
+          chapterPageRef.value.focusContentAtEnd();
+        } else {
+          // Focus on normal page
+          const prevRightPageRef = normalPageRefs.value[prevRightPageIndex];
+          if (prevRightPageRef) {
+            prevRightPageRef.focusAtEnd();
+          }
+        }
+      }, 100); // Give more time for DOM updates
     } else {
-      // Original behavior for other cases
+      // Original behavior for other cases (right pages, single page mode)
       const prevIndex = pageIndex - 1;
       
-      if (prevIndex === 0) {
-        if (chapterPageRef.value) {
-          chapterPageRef.value.focusContentAtEnd();
+      // Use a longer timeout to ensure DOM is fully updated
+      setTimeout(() => {
+        if (prevIndex === 0) {
+          // Focus on chapter page
+          if (chapterPageRef.value) {
+            chapterPageRef.value.focusContentAtEnd();
+          }
+        } else {
+          // Focus on normal page
+          const prevPageRef = normalPageRefs.value[prevIndex];
+          if (prevPageRef) {
+            prevPageRef.focusAtEnd();
+          }
         }
-      } else {
-        const prevPageRef = normalPageRefs.value[prevIndex];
-        if (prevPageRef) {
-          prevPageRef.focusAtEnd();
-        }
-      }
+      }, 100); // Give more time for DOM updates
     }
   });
 };
@@ -1862,4 +1970,3 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   animation: zoomPulse 0.6s ease;
 }
 </style>
-  
