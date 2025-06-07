@@ -433,16 +433,18 @@ const fetchTips = async () => {
     const q = query(collection(db, 'tips'), orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
     
-    tips.value = querySnapshot.docs.map(doc => ({
+    const fetchedTips = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       // Convert Firestore timestamp to Date
       createdAt: doc.data().createdAt?.toDate() || new Date()
     }));
     
-    // Reset to first tip
-    if (tips.value.length > 0) {
-      currentTipIndex.value = 0;
+    tips.value = fetchedTips;
+    
+    // Set a random tip when tips are loaded
+    if (fetchedTips.length > 0) {
+      showRandomTip();
     }
   } catch (error) {
     console.error('Error fetching tips:', error);
@@ -451,11 +453,18 @@ const fetchTips = async () => {
   }
 };
 
-// Show next tip
-const showNextTip = () => {
+// Show a random tip
+const showRandomTip = () => {
   if (tips.value.length <= 1) return;
-  currentTipIndex.value = (currentTipIndex.value + 1) % tips.value.length;
+  let newIndex;
+  do {
+    newIndex = Math.floor(Math.random() * tips.value.length);
+  } while (tips.value.length > 1 && newIndex === currentTipIndex.value);
+  currentTipIndex.value = newIndex;
 };
+
+// Alias for backward compatibility
+const showNextTip = showRandomTip;
 
 // Format date as "Month Year"
 const formatDate = (date) => {
