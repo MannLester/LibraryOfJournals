@@ -112,12 +112,34 @@
               </span>
               <h3>Writer's Block Helper</h3>
             </div>
-            <p class="prompt-text">What's something you've been avoiding thinking about?</p>
+            
+            <Transition name="fade" mode="out-in">
+              <div v-if="isLoadingTips" class="tip-container">
+                <p class="tip-content">Loading writing tips...</p>
+              </div>
+              <div v-else-if="tips.length > 0" :key="currentTipIndex" class="tip-container">
+                <p class="tip-content">{{ tips[currentTipIndex]?.tipContent }}</p>
+                <p class="tip-meta">
+                  — {{ tips[currentTipIndex]?.tipWriter }}, {{ formatDate(tips[currentTipIndex]?.createdAt) }}
+                </p>
+              </div>
+              <div v-else class="tip-container">
+                <p class="tip-content">When you're stuck, try free writing for 5 minutes without stopping. Don't worry about grammar or spelling—just let the words flow!</p>
+                <p class="tip-meta">— The Writing Team</p>
+              </div>
+            </Transition>
+            
             <div class="prompt-actions">
-              <div class="try-another">Try Another</div>
+              <button 
+                @click="showNextTip" 
+                class="try-another"
+                :disabled="tips.length <= 1"
+              >
+                Try Another
+              </button>
               <button class="action-button prompt-btn" @click="showTipModal = true">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 6px;">
-                  <path d="M9.66347 17H14.3364M11.9999 3V4M18.3639 5.63604L17.6568 6.34315M21 11.9999H20M4 11.9999H3M6.34309 6.34315L5.63599 5.63604M8.46441 15.5356C6.51179 13.5829 6.51179 10.4171 8.46441 8.46449C10.417 6.51187 13.5829 6.51187 15.5355 8.46449C17.4881 10.4171 17.4881 13.5829 15.5355 15.5356L14.9884 16.0827C14.3555 16.7155 13.9999 17.5739 13.9999 18.469V19C13.9999 20.1046 13.1045 21 11.9999 21C10.8954 21 9.99995 20.1046 9.99995 19V18.469C9.99995 17.5739 9.64438 16.7155 9.01151 16.0827L8.46441 15.5356Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 4v16m8-8H4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 Write Tips
               </button>
@@ -390,17 +412,60 @@
   />
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, computed } from 'vue';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '../services/firebase/config';
 import useAuth from '../composables/useAuth';
 import TipModal from '../components/TipModal.vue';
 
 // For tab switching in Writing Journey section
 const activeTab = ref('activity');
 const showTipModal = ref(false);
+const tips = ref([]);
+const currentTipIndex = ref(0);
+const isLoadingTips = ref(true);
+
+// Fetch tips from Firestore
+const fetchTips = async () => {
+  try {
+    isLoadingTips.value = true;
+    const q = query(collection(db, 'tips'), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    tips.value = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      // Convert Firestore timestamp to Date
+      createdAt: doc.data().createdAt?.toDate() || new Date()
+    }));
+    
+    // Reset to first tip
+    if (tips.value.length > 0) {
+      currentTipIndex.value = 0;
+    }
+  } catch (error) {
+    console.error('Error fetching tips:', error);
+  } finally {
+    isLoadingTips.value = false;
+  }
+};
+
+// Show next tip
+const showNextTip = () => {
+  if (tips.value.length <= 1) return;
+  currentTipIndex.value = (currentTipIndex.value + 1) % tips.value.length;
+};
+
+// Format date as "Month Year"
+const formatDate = (date) => {
+  if (!date) return '';
+  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+};
 
 const handleTipSubmitted = () => {
-  console.log('Tip submitted successfully!');
+  fetchTips(); // Refresh tips when a new one is submitted
+  showTipModal.value = false;
 };
 
 function switchTab(tab) {
@@ -417,17 +482,19 @@ const { user, account, isAuthenticated } = useAuth();
 
 const formattedDate = computed(() => {
   const now = new Date();
-  const options: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' };
+  const options = { 
+    weekday: 'long', 
+    month: 'long', 
+    day: 'numeric' 
+  };
   return now.toLocaleDateString('en-US', options);
 });
 
-// You would fetch the user's journals here
-onMounted(() => {
-  // Check if user is authenticated
-  if (!isAuthenticated.value) {
-    // Handle if somehow the user got here without being authenticated
-    console.warn('User is not authenticated, but viewing HomePage');
-  } else {
+// Fetch tips and check authentication when component mounts
+onMounted(async () => {
+  await fetchTips();
+  
+  if (isAuthenticated.value) {
     console.log('User is authenticated:', account.value?.username);
     // Here you would fetch the user's journals from your database
   }
@@ -435,6 +502,57 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Tip content styling */
+.tip-container {
+  min-height: 100px;
+  margin: 1rem 0;
+}
+
+.tip-content {
+  font-family: 'Caveat', cursive, sans-serif;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+  white-space: pre-line;
+  text-align: left;
+  padding: 0 0.5rem;
+}
+
+.tip-meta {
+  font-family: 'Playfair Display', serif;
+  color: #666;
+  font-style: italic;
+  margin-top: 0.5rem;
+  text-align: right;
+  font-size: 0.9rem;
+}
+
+.no-tips {
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-style: italic;
+}
+
+/* Fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Disabled state for Try Another button */
+.try-another:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Main container */
 .min-h-screen {
   min-height: 100vh;
