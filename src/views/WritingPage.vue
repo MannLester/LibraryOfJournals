@@ -1404,13 +1404,17 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   flex: 0 0 auto;
   width: 90vh;
   max-width: 45vw;
+  height: 127.26vh; /* Fixed height */
+  max-height: 100%;
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   position: relative;
   top: 0;
   margin: 0;
   padding: 0;
   transform-style: preserve-3d;
+  align-self: flex-start;
+  overflow: hidden; /* Prevent content from spilling */
 }
 
 .book-page > * {
@@ -1677,7 +1681,8 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   box-shadow: 
     -8px 0 20px rgba(0, 0, 0, 0.15),
     inset 3px 0 6px rgba(0, 0, 0, 0.05);
-  margin-right: 0 !important;
+  margin: 0 !important;
+  top: 0;
 }
 
 .right-page {
@@ -1686,7 +1691,8 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   box-shadow: 
     8px 0 20px rgba(0, 0, 0, 0.15),
     inset -3px 0 6px rgba(0, 0, 0, 0.05);
-  margin-left: 0 !important;
+  margin: 10px 0 0 0 !important;
+  top: 0;
 }
 
 /* ENHANCED: Book Spine with Realistic Binding */
