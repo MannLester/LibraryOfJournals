@@ -27,7 +27,7 @@
         beautiful as the thoughts within it.
       </h2>
       <div class="flex flex-col md:flex-row gap-5 mb-14">
-        <button class="px-9 py-3.5 rounded-full bg-signup-pink text-white font-medium hover:bg-pink-700 transition duration-300 ease-in-out shadow-sm">
+        <button class="px-9 py-3.5 rounded-full bg-signup-pink text-white font-medium hover:bg-pink-700 transition duration-800 ease-in-out shadow-sm">
           Begin Your Journey
         </button>
         <button class="px-9 py-3.5 rounded-full border border-gray-800 hover:bg-gray-50 transition duration-300 ease-in-out">

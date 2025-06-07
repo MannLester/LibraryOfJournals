@@ -45,9 +45,9 @@
       </div>
       
       <!-- Journal Content - with handwritten style -->
-      <div class="p-8 min-h-[200px]" :style="{backgroundColor: getPageColor()}">
-        <p class="font-caveat text-2xl leading-relaxed text-gray-800 text-center">
-          {{ getPageContent() }}
+      <div class="p-8 min-h-[200px] relative" :style="{backgroundColor: getPageColor()}">
+        <p class="font-caveat text-2xl leading-relaxed text-gray-800 text-center whitespace-pre-line">
+          {{ typedText }}<span v-if="isTyping" class="typing-cursor">|</span>
         </p>
       </div>
       
@@ -98,6 +98,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+
 const props = defineProps({
   title: {
     type: String,
@@ -124,12 +126,74 @@ const props = defineProps({
 // Methods to emit events when navigation buttons are clicked
 const emit = defineEmits(['next-page', 'prev-page']);
 
+// Typing animation state
+const typedText = ref('');
+const isTyping = ref(false);
+let typingTimeout: number | null = null;
+let currentPageContent = '';
+
+// Function to handle the typing animation
+function typeWriter(text: string, speed = 30) {
+  let i = 0;
+  typedText.value = '';
+  isTyping.value = true;
+  
+  function type() {
+    if (i < text.length) {
+      typedText.value += text.charAt(i);
+      i++;
+      typingTimeout = setTimeout(type, speed);
+    } else {
+      isTyping.value = false;
+    }
+  }
+  
+  type();
+}
+
+// Reset and restart typing animation when page changes
+function updateTypingAnimation() {
+  if (typingTimeout) {
+    clearTimeout(typingTimeout);
+  }
+  
+  // Get the new content for the current page
+  currentPageContent = getPageContent();
+  
+  // Start typing animation after a small delay
+  setTimeout(() => {
+    typeWriter(currentPageContent);
+  }, 300);
+}
+
+// Watch for page changes
+watch(() => props.currentPage, () => {
+  updateTypingAnimation();
+});
+
+// Initialize typing animation when component mounts
+onMounted(() => {
+  currentPageContent = getPageContent();
+  typeWriter(currentPageContent);
+});
+
+// Clean up timeouts when component unmounts
+onBeforeUnmount(() => {
+  if (typingTimeout) {
+    clearTimeout(typingTimeout);
+  }
+});
+
 function nextPage() {
-  emit('next-page');
+  if (!isTyping.value) {
+    emit('next-page');
+  }
 }
 
 function prevPage() {
-  emit('prev-page');
+  if (!isTyping.value) {
+    emit('prev-page');
+  }
 }
 
 // Functions to handle multi-page content using Number comparison instead of strict equality
@@ -176,5 +240,23 @@ function getPageColor() {
   position: relative;
   isolation: isolate; /* Creates a new stacking context */
   background-color: transparent;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.typing-cursor {
+  display: inline-block;
+  margin-left: 2px;
+  animation: blink 0.7s steps(1) infinite;
+  color: rgba(0, 0, 0, 0.7);
+  font-weight: bold;
+}
+
+/* Smooth transition for text updates */
+p {
+  transition: opacity 0.3s ease-in-out;
 }
 </style>
