@@ -39,7 +39,7 @@
       
       <!-- LANDING PAGE: Navigation and auth buttons when not logged in -->
       <nav class="navigation" v-else>
-        <a @click="scrollToSection('features')" class="nav-link">
+        <a @click="scrollToSection('features')" class="nav-link" >
           <svg xmlns="http://www.w3.org/2000/svg" class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
           </svg>
@@ -67,7 +67,7 @@
 
       <!-- LOGGED IN: Header controls (search, notifications, theme toggle, user) -->
       <div class="header-controls" v-else>
-        <button class="icon-button">
+        <button class="icon-button" @click="navigateToExplore" :class="{ 'active': activeNavItem === 'explore' }" title="Search">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
             <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
           </svg>
@@ -384,6 +384,10 @@ function showLibraryPage() {
   // You'll need to implement these methods in App.vue or elsewhere
   const event = new CustomEvent('showPage', { detail: { page: 'library' } });
   window.dispatchEvent(event);
+}
+
+function navigateToExplore() {
+  navigateTo('explore', '/explore');
 }
 
 function showHomePage() {

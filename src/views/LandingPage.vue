@@ -284,9 +284,6 @@
           <a href="#" class="inline-block px-10 py-4 rounded-full bg-[#ED6A8F] text-white text-lg font-medium hover:bg-opacity-90 transition duration-300 shadow-md mb-6 blink-button">
             Create Your First Journal
           </a>
-          
-          <!-- Fine print -->
-          <p class="text-sm text-gray-500">No credit card required. Free plan available.</p>
         </div>
       </div>
     </section>

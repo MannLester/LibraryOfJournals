@@ -38,49 +38,6 @@
     
     <!-- Main Content -->
     <div class="explore-container">
-      <!-- Sidebar Filters -->
-      <aside class="filters-sidebar">
-        <div class="filter-section">
-          <h3>Categories</h3>
-          <div class="filter-options">
-            <label v-for="category in categories" :key="category.id" class="filter-option">
-              <input 
-                type="checkbox" 
-                :value="category.id" 
-                v-model="selectedCategories"
-              >
-              <span class="checkmark"></span>
-              {{ category.name }}
-              <span class="count">({{ category.count }})</span>
-            </label>
-          </div>
-        </div>
-        
-        <div class="filter-section">
-          <h3>Tags</h3>
-          <div class="tags-container">
-            <span 
-              v-for="tag in popularTags" 
-              :key="tag"
-              class="tag"
-              :class="{ active: selectedTags.includes(tag) }"
-              @click="toggleTag(tag)"
-            >
-              #{{ tag }}
-            </span>
-          </div>
-        </div>
-        
-        <div class="filter-section">
-          <h3>Sort By</h3>
-          <select v-model="sortBy" class="sort-select">
-            <option value="recent">Most Recent</option>
-            <option value="popular">Most Popular</option>
-            <option value="trending">Trending</option>
-          </select>
-        </div>
-      </aside>
-      
       <!-- Journal Grid -->
       <main class="journal-grid">
         <div v-if="filteredJournals.length === 0" class="no-results">
