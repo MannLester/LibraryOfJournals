@@ -152,13 +152,13 @@
       <div class="journals-section">
         <div class="section-header">
           <h2>Saved Journals</h2>
-          <button class="view-all-btn">View All &rarr;</button>
+          <button class="view-all-btn" @click="navigateToLibrary">View All &rarr;</button>
         </div>
         <!-- Empty Journals State (displayed when no journals exist) -->
         <div class="journals-container" v-if="true">
           <div class="empty-state">
-            <p>You don't have any journals yet. Create your first one to get started!</p>
-            <button class="primary-button">
+            <p>You don't have any saved journals. Explore the community to get started!</p>
+            <button class="primary-button" @click="navigateToExplore">
               <span class="icon">📖</span>
               Explore New Journals
             </button>
@@ -484,6 +484,58 @@ function switchTab(tab) {
 function navigateToWrite() {
   const event = new CustomEvent('showPage', { detail: { page: 'writing' } });
   window.dispatchEvent(event);
+}
+
+function navigateToExplore() {
+  // Update the URL first
+  if (window.history.pushState) {
+    window.history.pushState({}, '', '/explore');
+  } else {
+    window.location.href = '/explore';
+  }
+  
+  // Dispatch a custom event that the Header component is listening for
+  const event = new CustomEvent('showPage', { 
+    detail: { 
+      page: 'explore' 
+    } 
+  });
+  window.dispatchEvent(event);
+  
+  // Also update the active nav item directly in case the event isn't caught
+  const header = document.querySelector('header');
+  if (header) {
+    const headerComponent = header.__vue_app__?.appContext?.components?.Header;
+    if (headerComponent && headerComponent.setupState) {
+      headerComponent.setupState.activeNavItem = 'explore';
+    }
+  }
+}
+
+function navigateToLibrary() {
+  // Update the URL first
+  if (window.history.pushState) {
+    window.history.pushState({}, '', '/library');
+  } else {
+    window.location.href = '/library';
+  }
+  
+  // Dispatch a custom event that the Header component is listening for
+  const event = new CustomEvent('showPage', { 
+    detail: { 
+      page: 'library' 
+    } 
+  });
+  window.dispatchEvent(event);
+  
+  // Also update the active nav item directly in case the event isn't caught
+  const header = document.querySelector('header');
+  if (header) {
+    const headerComponent = header.__vue_app__?.appContext?.components?.Header;
+    if (headerComponent && headerComponent.setupState) {
+      headerComponent.setupState.activeNavItem = 'library';
+    }
+  }
 }
 
 // Get authentication state

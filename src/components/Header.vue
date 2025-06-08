@@ -363,18 +363,50 @@ const { user, account, isAuthenticated, login, signup, logout } = useAuth();
 // Track active navigation item
 const activeNavItem = ref('home'); // Default to home
 
+// Set initial active nav item based on current path
+const updateActiveNavFromPath = () => {
+  const path = window.location.pathname;
+  if (path === '/explore') {
+    activeNavItem.value = 'explore';
+  } else if (path === '/library') {
+    activeNavItem.value = 'library';
+  } else if (path === '/settings') {
+    activeNavItem.value = 'settings';
+  } else {
+    activeNavItem.value = 'home';
+  }
+};
+
+// Listen for popstate events (back/forward navigation) and showPage events
+const handleShowPage = (event: Event) => {
+  const customEvent = event as CustomEvent;
+  if (customEvent.detail?.page) {
+    activeNavItem.value = customEvent.detail.page;
+  }
+};
+
+onMounted(() => {
+  updateActiveNavFromPath();
+  window.addEventListener('popstate', updateActiveNavFromPath);
+  window.addEventListener('showPage', handleShowPage as EventListener);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('popstate', updateActiveNavFromPath);
+  window.removeEventListener('showPage', handleShowPage as EventListener);
+});
+
 // Function to set active nav item
 const navigateTo = (item: string, path: string) => {
   activeNavItem.value = item;
-  // Emit an event to notify the parent component about the navigation
-  window.dispatchEvent(new CustomEvent('showPage', { detail: { page: item } }));
-  
-  // Update the URL without reloading the page
+  // Update the URL without reloading the page first
   if (window.history.pushState) {
     window.history.pushState({}, '', path);
   } else {
     window.location.href = path;
   }
+  // Then emit the event to notify other components
+  window.dispatchEvent(new CustomEvent('showPage', { detail: { page: item } }));
 };
 
 // These functions would need to be implemented elsewhere in your app
@@ -387,6 +419,7 @@ function showLibraryPage() {
 }
 
 function navigateToExplore() {
+  activeNavItem.value = 'explore';
   navigateTo('explore', '/explore');
 }
 
