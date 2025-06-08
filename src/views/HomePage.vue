@@ -317,11 +317,15 @@
           <div class="quote-card">
             <div class="quote-content">
               <div class="quote-marks">&ldquo;</div>
-              <p class="quote-text">The habit of writing thus for my own eye only is good practice. It loosens the ligaments.</p>
-              <div class="quote-author">
-                <span class="author-name">Virginia Woolf</span>
-                <span class="author-book">A Writer's Diary</span>
-              </div>
+              <transition name="fade" mode="out-in">
+                <div :key="currentQuote.id">
+                  <p class="quote-text">{{ currentQuote.quotesContent || 'Loading quote...' }}</p>
+                  <div class="quote-author" v-if="currentQuote.quotesAuthor">
+                    <span class="author-name">{{ currentQuote.quotesAuthor }}</span>
+                    <span class="author-book" v-if="currentQuote.quotesSource">{{ currentQuote.quotesSource }}</span>
+                  </div>
+                </div>
+              </transition>
             </div>
           </div>
         </div>
@@ -365,7 +369,7 @@
             </div>
             
             <!-- Explore More Button -->
-            <button class="outline-button">
+            <button class="outline-button" @click="navigateToExplore">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
                 <path d="M15.5 14H14.71L14.43 13.73C15.63 12.33 16.25 10.42 15.91 8.39C15.44 5.61 13.12 3.39 10.32 3.05C6.09 2.53 2.53 6.09 3.05 10.32C3.39 13.12 5.61 15.44 8.39 15.91C10.42 16.25 12.33 15.63 13.73 14.43L14 14.71V15.5L18.25 19.75C18.66 20.16 19.33 20.16 19.74 19.75C20.15 19.34 20.15 18.67 19.74 18.26L15.5 14ZM9.5 14C7.01 14 5 11.99 5 9.5C5 7.01 7.01 5 9.5 5C11.99 5 14 7.01 14 9.5C14 11.99 11.99 14 9.5 14Z" fill="#555"/>
               </svg>
@@ -413,8 +417,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { collection, query, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../services/firebase/config';
 import useAuth from '../composables/useAuth';
 import TipModal from '../components/TipModal.vue';
@@ -538,8 +542,50 @@ function navigateToLibrary() {
   }
 }
 
+// Quote state
+const quotes = ref([]);
+const currentQuote = ref({});
+
 // Get authentication state
 const { user, account, isAuthenticated } = useAuth();
+
+// Fetch quotes from Firebase
+const fetchQuotes = async () => {
+  try {
+    const q = query(collection(db, 'quotes'));
+    const querySnapshot = await getDocs(q);
+    quotes.value = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    // Set a random quote
+    if (quotes.value.length > 0) {
+      currentQuote.value = getRandomQuote();
+    }
+  } catch (error) {
+    console.error('Error fetching quotes:', error);
+  }
+};
+
+// Get a random quote from the fetched quotes
+const getRandomQuote = () => {
+  if (quotes.value.length === 0) return {};
+  const randomIndex = Math.floor(Math.random() * quotes.value.length);
+  return quotes.value[randomIndex];
+};
+
+// Fetch quotes when component mounts
+onMounted(() => {
+  fetchQuotes();
+  // Refresh quote every 30 seconds
+  const quoteInterval = setInterval(() => {
+    if (quotes.value.length > 0) {
+      currentQuote.value = getRandomQuote();
+    }
+  }, 30000); // 30 seconds
+  onUnmounted(() => clearInterval(quoteInterval));
+});
 
 const formattedDate = computed(() => {
   const now = new Date();
@@ -563,6 +609,25 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* Fade transition */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.8s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.quote-content {
+  overflow: hidden;
+}
+
+.quote-content > * {
+  transition: all 0.8s ease;
+}
+
 /* Tip content styling */
 .tip-container {
   min-height: 100px;
