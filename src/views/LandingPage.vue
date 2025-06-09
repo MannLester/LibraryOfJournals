@@ -263,14 +263,26 @@
     <!-- Final CTA Section -->
     <section class="py-24 px-4 bg-[#f8e8e8]">
       <div class="max-w-7xl mx-auto relative">
-        <!-- Left journal decoration -->
+        <!-- Decorative elements -->
         <div class="absolute left-0 top-1/2 transform -translate-y-1/2 hidden lg:block">
-          <div class="w-44 h-60 bg-white rounded shadow-md transform rotate-[-6deg]"></div>
+          <div class="w-44 h-60 bg-white rounded shadow-md transform -rotate-[6deg] overflow-hidden">
+            <img 
+              src="../assets/wallpaper1.jpg" 
+              alt="Decorative wallpaper"
+              class="w-full h-full object-cover p-1"
+            />
+          </div>
         </div>
         
         <!-- Right journal decoration -->
         <div class="absolute right-0 top-1/2 transform -translate-y-1/2 hidden lg:block">
-          <div class="w-44 h-60 bg-white rounded shadow-md transform rotate-[6deg]"></div>
+          <div class="w-44 h-60 bg-white rounded shadow-md transform rotate-[6deg] overflow-hidden">
+            <img 
+              src="../assets/wallpaper2.jpg" 
+              alt="Decorative wallpaper"
+              class="w-full h-full object-cover p-1"
+            />
+          </div>
         </div>
         
         <!-- CTA content -->
