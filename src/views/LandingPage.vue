@@ -210,7 +210,10 @@
     <section id="testimonials" class="py-32 px-4 relative">
       <div class="max-w-7xl mx-auto">
         <h2 class="text-5xl font-cormorant font-bold text-center mb-4">Stories from Our Community</h2>
-        <p class="text-xl text-gray-600 text-center mb-16">Join some of our writers documenting their journey</p>
+        <p class="text-xl text-gray-600 text-center mb-16">
+          <span v-if="writerCount === 0">Loading writer count...</span>
+          <span v-else>Join <span class="text-[#ED6A8F] font-medium">{{ writerCount }} writers </span> documenting their journey</span>
+        </p>
         
         <div class="relative">
           <!-- Vertical line with dots -->
@@ -356,16 +359,59 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import JournalPreview from '../components/JournalPreview.vue';
+import { collection, getCountFromServer, onSnapshot } from 'firebase/firestore';
+import { db } from '../services/firebase/config';
 
 // State for journal pagination
 const currentPage = ref(1);
-const totalPages = ref(3);
+const totalPages = 3; // Total number of pages in the journal preview
+const writerCount = ref(0);
+
+// Reference to the accounts collection
+const accountsRef = collection(db, 'accounts');
+
+// Set up real-time updates when component mounts
+onMounted(() => {
+  console.log('Setting up writer count listener...');
+  
+  // Set up real-time listener first for immediate updates
+  const unsubscribe = onSnapshot(accountsRef, 
+    (snapshot) => {
+      const count = snapshot.size;
+      console.log('Writer count updated:', count);
+      writerCount.value = count;
+    },
+    (error) => {
+      console.error('Error in real-time listener:', error);
+    }
+  );
+  
+  // Also get initial count (this might be slightly more accurate)
+  getCountFromServer(accountsRef)
+    .then(snapshot => {
+      const count = snapshot.data().count;
+      console.log('Initial count from server:', count);
+      // Only update if we don't have a value yet
+      if (writerCount.value === 0) {
+        writerCount.value = count;
+      }
+    })
+    .catch(error => {
+      console.error('Error getting initial count:', error);
+    });
+  
+  // Clean up the listener when component is unmounted
+  onUnmounted(() => {
+    console.log('Cleaning up writer count listener');
+    unsubscribe();
+  });
+});
 
 // Handler for next page button click
 function handleNextPage() {
-  if (currentPage.value < totalPages.value) {
+  if (currentPage.value < totalPages) {
     currentPage.value++;
   }
 }
