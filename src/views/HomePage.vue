@@ -1324,8 +1324,9 @@ onMounted(async () => {
   color: #E9184C;
   opacity: 1;
   position: absolute;
-  top: -25px;
-  left: -15px;
+  top: -10px;
+  left: 0px;
+  line-height: 1;
 }
 
 .quote-text {
