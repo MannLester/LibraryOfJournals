@@ -278,11 +278,6 @@
           <h2 class="text-6xl font-cormorant font-bold mb-6">Begin Your Story Today</h2>
           <p class="text-xl text-gray-600 mb-8">Your journey is waiting to be written. Join our community of writers and start documenting your story.</p>
           
-          <!-- Handwritten text -->
-          <div class="flex justify-end max-w-md mx-auto mb-8">
-            <p class="font-caveat text-xl transform -rotate-2">Start here!</p>
-          </div>
-          
           <!-- CTA button -->
           <a href="#" class="inline-block px-10 py-4 rounded-full bg-[#ED6A8F] text-white text-lg font-medium hover:bg-opacity-90 transition duration-300 shadow-md mb-6 blink-button">
             Create Your First Journal
