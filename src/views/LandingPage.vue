@@ -56,8 +56,16 @@
         <!-- Left side - Image container with layered design -->
         <div class="md:w-1/2 flex items-center justify-center">
           <div class="relative w-full h-[600px] flex items-center justify-center">
-            <!-- Rotated background square -->
-            <div class="absolute w-[85%] h-[85%] bg-white rounded-lg shadow-lg transform -rotate-[18.58deg] z-10"></div>
+            <!-- Rotated background square with image -->
+            <div class="absolute w-[85%] h-[85%] bg-white rounded-lg shadow-lg transform -rotate-[18.58deg] z-10 p-3">
+              <div class="w-full h-full overflow-hidden rounded-md">
+                <img 
+                  src="../assets/wallpaper3.jpg" 
+                  alt="Journal background"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+            </div>
             
             <!-- Journal container -->
             <div class="relative w-[75%] h-[75%] bg-[#f5efd5] rounded-sm shadow-md z-25 flex flex-col p-10">
@@ -85,8 +93,8 @@
             
             <!-- Testimonial quote -->
             <div class="absolute bottom-0 right-0 transform translate-x-0 translate-y-1/4 rounded-lg shadow-md p-6 max-w-[55%] z-20 bg-[#f5efd5]">
-              <p class="font-caveat text-xl italic mb-2">"I never knew how much I needed this space until I found it."</p>
-              <p class="text-right text-gray-500">&mdash; Jamie, writing since 2022</p>
+              <p class="font-caveat text-xl italic mb-2">"The good and bad chapters is part of the journey."</p>
+              <p class="text-right text-gray-500">&mdash; Lester, writing since 2025</p>
             </div>
           </div>
         </div>
