@@ -33,7 +33,18 @@
         <div class="nav-section">
           <div class="mode-toggle">
             <button class="mode-btn active">Write Mode</button>
-            <button class="mode-btn">Present Mode</button>
+            <button class="mode-btn" :disabled="isSaving">Present Mode</button>
+            <button 
+              class="save-btn" 
+              @click="saveChapter"
+              :disabled="isSaving"
+              :class="{ 'saving': isSaving }"
+            >
+              <span v-if="!isSaving" class="icon-save">💾</span>
+              <span v-else class="icon-loading">⏳</span>
+              {{ isSaving ? 'Saving...' : 'Save' }}
+              <span v-if="saveSuccess" class="save-success">✓</span>
+            </button>
           </div>
         </div>
       </div>
@@ -312,6 +323,7 @@ import { ref, computed, onMounted, nextTick } from 'vue';
 import ChapterPage from '../components/pages/ChapterPage.vue';
 import NormalPage from '../components/pages/NormalPage.vue';
 import { defineEmits } from 'vue';
+import { saveChapterAsTextPdf } from '../utils/pdfTextUtils';
 
 // Zoom state
 const zoomLevel = ref(90);
@@ -346,6 +358,77 @@ const currentPage = ref(1);
 // Component refs
 const chapterPageRef = ref(null);
 const normalPageRefs = ref({});
+
+// Save chapter as PDF
+const isSaving = ref(false);
+const saveError = ref(null);
+const saveSuccess = ref(false);
+
+const saveChapter = async () => {
+  if (isSaving.value) return;
+  
+  isSaving.value = true;
+  saveError.value = null;
+  saveSuccess.value = false;
+  
+  try {
+    // Get the main content element
+    const contentElement = document.querySelector('.editor-content');
+    if (!contentElement) {
+      throw new Error('Editor content element not found. Please try again.');
+    }
+
+    // Get the current user ID and document IDs (replace with actual values)
+    const userId = 'current-user'; // TODO: Get from auth
+    const journalId = 'current-journal'; // TODO: Get from route/params
+    const chapterId = 'current-chapter'; // TODO: Get from route/params
+    
+    if (!userId || !journalId || !chapterId) {
+      throw new Error('Missing required document IDs');
+    }
+
+    console.log('Starting PDF generation...');
+    
+    // Generate and save PDF
+    const { publicUrl, error } = await saveChapterAsTextPdf(contentElement, {
+      chapterId,
+      userId,
+      journalId
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    console.log('PDF saved successfully:', publicUrl);
+    
+    // Here you would typically update the chapter's pdfPath in Firebase
+    // Example:
+    // await updateDoc(doc(db, 'users', userId, 'journals', journalId, 'chapters', chapterId), {
+    //   pdfPath: publicUrl,
+    //   updatedAt: serverTimestamp()
+    // });
+    
+    saveSuccess.value = true;
+    
+    // Show success message
+    alert('Chapter saved successfully!');
+    
+  } catch (error) {
+    console.error('Error saving chapter:', error);
+    saveError.value = error.message || 'Failed to save chapter';
+    alert(`Error: ${saveError.value}`);
+  } finally {
+    isSaving.value = false;
+    
+    // Reset success message after 3 seconds
+    if (saveSuccess.value) {
+      setTimeout(() => {
+        saveSuccess.value = false;
+      }, 3000);
+    }
+  }
+};
 
 // Computed properties
 const normalPages = computed(() => {
@@ -889,6 +972,45 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
 </script>
 
 <style scoped>
+/* Save button styles */
+.save-btn {
+  position: relative;
+  transition: all 0.3s ease;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.save-btn.saving {
+  opacity: 0.8;
+  cursor: not-allowed;
+  background-color: #e0e0e0;
+  color: #666;
+}
+
+.save-btn .icon-loading {
+  animation: spin 1s linear infinite;
+}
+
+.save-success {
+  margin-left: 4px;
+  color: #4caf50;
+  font-weight: bold;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
 /* All the existing styles remain the same */
 .writing-page-container {
   display: flex;
@@ -1036,28 +1158,43 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
 }
 
 .mode-btn {
-  padding: 0 20px;
-  height: 32px;
+  padding: 8px 16px;
   border: none;
-  border-radius: 6px;
+  background: none;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  background: transparent;
-  color: #6c757d;
+  font-size: 14px;
+  color: #666;
+  border-radius: 4px;
   transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.mode-btn:hover {
-  color: #212529;
 }
 
 .mode-btn.active {
-  background: white;
-  color: #E9184C;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  font-weight: 600;
+  background: #f0f0f0;
+  color: #333;
+  font-weight: 500;
+}
+
+.save-btn {
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.save-btn:hover {
+  background-color: #45a049;
+}
+
+.save-btn .icon-save {
+  font-size: 16px;
 }
 
 .main-content-area {
