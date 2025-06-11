@@ -93,7 +93,7 @@
             
             <!-- Testimonial quote -->
             <div class="absolute bottom-0 right-0 transform translate-x-0 translate-y-1/4 rounded-lg shadow-md p-6 max-w-[55%] z-20 bg-[#f5efd5]">
-              <p class="font-caveat text-xl italic mb-2">"The good and bad chapters is part of the journey."</p>
+              <p class="font-caveat text-xl italic mb-2">"The good and bad chapters are part of the journey."</p>
               <p class="text-right text-gray-500">&mdash; Lester, writing since 2025</p>
             </div>
           </div>

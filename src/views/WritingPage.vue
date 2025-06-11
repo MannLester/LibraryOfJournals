@@ -74,10 +74,19 @@
         <div class="scrollable-content">
           <div class="chapter-list">
             <!-- Cover Page -->
-            <div class="chapter-item active">
+            <div class="chapter-item">
               <span class="chapter-icon">📕</span>
               <div class="chapter-details">
                 <p class="chapter-title">Cover Page</p>
+                <p class="chapter-meta">Click to edit</p>
+              </div>
+            </div>
+            
+            <!-- Chapter 1 -->
+            <div class="chapter-item active">
+              <span class="chapter-icon">📄</span>
+              <div class="chapter-details">
+                <p class="chapter-title">Chapter 1</p>
                 <p class="chapter-meta">Click to edit</p>
               </div>
             </div>
