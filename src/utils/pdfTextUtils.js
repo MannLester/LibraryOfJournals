@@ -28,8 +28,22 @@ export async function createTextBasedPdf(contentElement, { chapterId, userId, jo
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     
-    // Get all text nodes from the content element
-    const textContent = getTextContent(contentElement);
+    // Get all text nodes from the content element and filter out empty pages
+    const textContent = getTextContent(contentElement).filter(item => {
+      // Skip empty text nodes
+      if (!item.text || !item.text.trim()) return false;
+      
+      // Skip elements with 'No content' text in double page view
+      if (item.text.trim() === 'No content' && item.className?.includes('empty-page-content')) {
+        return false;
+      }
+      
+      return true;
+    });
+    
+    if (textContent.length === 0) {
+      throw new Error('No content to save');
+    }
     
     // Draw the content on the page
     let y = height - 50; // Start 50 points from the top
