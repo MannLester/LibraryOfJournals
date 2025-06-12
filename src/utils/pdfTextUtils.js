@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { uploadFile } from './supabase';
 
@@ -215,8 +216,9 @@ export async function saveChapterAsTextPdf(contentElement, { chapterId, userId, 
     
     console.log('PDF generated successfully, size:', pdfBlob.size, 'bytes');
     
-    // Upload to Supabase - save directly in the root of the pdfs bucket
-    const fileName = `${chapterId}.pdf`;
+    // Generate a unique filename using UUID
+    const uniqueId = uuidv4();
+    const fileName = `${uniqueId}.pdf`;
     console.log('Uploading PDF to Supabase bucket "pdfs" with filename:', fileName);
     
     const { publicUrl, error } = await uploadFile('pdfs', fileName, pdfBlob);

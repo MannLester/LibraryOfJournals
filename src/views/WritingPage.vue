@@ -33,18 +33,7 @@
         <div class="nav-section">
           <div class="mode-toggle">
             <button class="mode-btn active">Write Mode</button>
-            <button class="mode-btn" :disabled="isSaving">Present Mode</button>
-            <button 
-              class="save-btn" 
-              @click="saveChapter"
-              :disabled="isSaving"
-              :class="{ 'saving': isSaving }"
-            >
-              <span v-if="!isSaving" class="icon-save">💾</span>
-              <span v-else class="icon-loading">⏳</span>
-              {{ isSaving ? 'Saving...' : 'Save' }}
-              <span v-if="saveSuccess" class="save-success">✓</span>
-            </button>
+            <button class="mode-btn">Present Mode</button>
           </div>
         </div>
       </div>
@@ -301,8 +290,16 @@
 
       <!-- Floating Action Buttons -->
       <div class="floating-actions">
-        <button class="fab" title="Save">
-          <span class="icon-save"></span>
+        <button 
+          class="fab" 
+          title="Save"
+          @click="saveChapter"
+          :disabled="isSaving"
+          :class="{ 'saving': isSaving }"
+        >
+          <span v-if="!isSaving" class="icon-save"></span>
+          <span v-else class="icon-loading"></span>
+          <span v-if="saveSuccess" class="fab-success">✓</span>
         </button>
         <button class="fab" title="Voice Input">
           <span class="icon-mic"></span>
@@ -972,31 +969,68 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
 </script>
 
 <style scoped>
-/* Save button styles */
-.save-btn {
+/* Floating action button styles */
+.fab {
   position: relative;
   transition: all 0.3s ease;
-  min-width: 80px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  background: #4a6bdf;
+  color: white;
+  border: none;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  cursor: pointer;
+  font-size: 1.2rem;
 }
 
-.save-btn.saving {
-  opacity: 0.8;
+.fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.fab:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.fab.saving {
+  background: #757575;
   cursor: not-allowed;
-  background-color: #e0e0e0;
-  color: #666;
+  transform: none;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-.save-btn .icon-loading {
+.fab .icon-loading {
   animation: spin 1s linear infinite;
+  font-size: 1.2rem;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
 }
 
-.save-success {
-  margin-left: 4px;
-  color: #4caf50;
+/* Define the hourglass icon for the loading state */
+.icon-loading::before {
+  content: "⏳";
+}
+
+.fab-success {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #4caf50;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
   font-weight: bold;
   animation: fadeIn 0.3s ease;
 }
