@@ -6,6 +6,7 @@ import HomePage from './views/HomePage.vue'
 import LibraryPage from './views/LibraryPage.vue'
 import ExplorePage from './views/ExplorePage.vue'
 import WritingPage from './views/WritingPage.vue'
+import DonatePage from './views/DonatePage.vue';
 import bgImage from './assets/bgImage.jpg'
 import useAuth from './composables/useAuth';
 
@@ -49,6 +50,7 @@ const contentAreaStyle = computed(() => {
         <LibraryPage v-else-if="currentPage === 'library'" />
         <ExplorePage v-else-if="currentPage === 'explore'" />
         <WritingPage v-else-if="currentPage === 'writing'" />
+        <DonatePage v-else-if="currentPage === 'donate'" />
       </template>
       <!-- Show landing page for non-authenticated users -->
       <LandingPage v-else />

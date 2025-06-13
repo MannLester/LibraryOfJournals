@@ -369,8 +369,8 @@ const updateActiveNavFromPath = () => {
     activeNavItem.value = 'explore';
   } else if (path === '/library') {
     activeNavItem.value = 'library';
-  } else if (path === '/settings') {
-    activeNavItem.value = 'settings';
+  } else if (path === '/donate') {
+    activeNavItem.value = 'donate';
   } else {
     activeNavItem.value = 'home';
   }
