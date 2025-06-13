@@ -66,7 +66,7 @@
           <div class="search-bar">
             <input type="text" placeholder="Search chapters..." />
           </div>
-          <button class="new-journal-btn">
+          <button class="new-journal-btn" @click="createNewChapter">
             <span class="icon-plus"></span> New Chapter
           </button>
         </div>
@@ -81,15 +81,14 @@
                 <p class="chapter-meta">Click to edit</p>
               </div>
             </div>
-            
-            <!-- Chapter 1 -->
-            <div class="chapter-item active">
-              <span class="chapter-icon">📄</span>
-              <div class="chapter-details">
-                <p class="chapter-title">Chapter 1</p>
-                <p class="chapter-meta">Click to edit</p>
-              </div>
-            </div>
+              <!-- Chapters -->
+            <ChapterListItem
+              v-for="(chapter, index) in chapters"
+              :key="chapter.id"
+              :title="`Chapter ${index + 1}`"
+              :isActive="currentChapter === index"
+              @click="selectChapter(index)"
+            />
             
             <!-- Back Page -->
             <div class="chapter-item">
@@ -319,6 +318,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue';
 import ChapterPage from '../components/pages/ChapterPage.vue';
 import NormalPage from '../components/pages/NormalPage.vue';
+import ChapterListItem from '../components/ChapterListItem.vue';
 import { defineEmits } from 'vue';
 import { saveChapterAsTextPdf } from '../utils/pdfTextUtils';
 
@@ -425,6 +425,24 @@ const saveChapter = async () => {
       }, 3000);
     }
   }
+};
+
+// Chapter management
+const chapters = ref([
+  { id: 1, title: 'Chapter 1' }
+]);
+const currentChapter = ref(0);
+
+const selectChapter = (index) => {
+  currentChapter.value = index;
+};
+
+const createNewChapter = () => {
+  const newChapter = {
+    id: Date.now(),
+    title: `Chapter ${chapters.value.length + 1}`
+  };
+  chapters.value.push(newChapter);
 };
 
 // Computed properties
