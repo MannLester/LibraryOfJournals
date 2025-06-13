@@ -62,9 +62,12 @@
               </svg>
             </span>
             <span class="btn-text">Back to Home</span>
-          </button>
-          <div class="search-bar">
-            <input type="text" placeholder="Search chapters..." />
+          </button>          <div class="search-bar">
+            <input 
+              type="text" 
+              v-model="searchQuery"
+              placeholder="Search chapters..." 
+            />
           </div>
           <button class="new-journal-btn" @click="createNewChapter">
             <span class="icon-plus"></span> New Chapter
@@ -82,7 +85,7 @@
               </div>
             </div>
               <!-- Chapters -->            <ChapterListItem
-              v-for="(chapter, index) in chapters"
+              v-for="(chapter, index) in filteredChapters"
               :key="chapter.id"              :title="chapter.title || `Chapter ${index + 1}`"
               :isActive="currentChapter === index"
               :isFirstChapter="index === 0"
@@ -327,6 +330,9 @@ const zoomLevel = ref(90);
 const zoomChanged = ref(false);
 let zoomTimeout = null;
 
+// Search state
+const searchQuery = ref('');
+
 // View mode state
 const isDoublePage = ref(false);
 const currentDoublePageIndex = ref(0);
@@ -432,6 +438,15 @@ const chapters = ref([
   { id: 1, title: 'Chapter 1' }
 ]);
 const currentChapter = ref(0);
+
+// Filter chapters based on search query
+const filteredChapters = computed(() => {
+  const query = searchQuery.value.toLowerCase().trim();
+  if (!query) return chapters.value;
+  return chapters.value.filter(chapter => 
+    chapter.title.toLowerCase().includes(query)
+  );
+});
 
 const selectChapter = (index) => {
   currentChapter.value = index;
