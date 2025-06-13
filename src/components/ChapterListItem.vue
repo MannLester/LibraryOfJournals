@@ -5,6 +5,9 @@
       <p class="chapter-title">{{ title }}</p>
       <p class="chapter-meta">Click to edit</p>
     </div>
+    <button v-if="!isFirstChapter" class="delete-btn" @click.stop="$emit('delete')" title="Delete chapter">
+      <span class="trash-icon">🗑️</span>
+    </button>
   </div>
 </template>
 
@@ -17,8 +20,14 @@ defineProps({
   isActive: {
     type: Boolean,
     default: false
+  },
+  isFirstChapter: {
+    type: Boolean,
+    default: false
   }
 });
+
+defineEmits(['delete']);
 </script>
 
 <style scoped>
@@ -65,5 +74,33 @@ defineProps({
   font-size: 0.8rem;
   color: #6c757d;
   margin: 0;
+}
+
+.delete-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(233, 24, 76, 0.1);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.chapter-item:hover .delete-btn {
+  background: rgba(233, 24, 76, 0.2);
+}
+
+.delete-btn:hover {
+  background: rgba(233, 24, 76, 0.2);
+}
+
+.trash-icon {
+  color: #E9184C;
+  font-size: 1rem;
 }
 </style>

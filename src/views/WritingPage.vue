@@ -81,13 +81,14 @@
                 <p class="chapter-meta">Click to edit</p>
               </div>
             </div>
-              <!-- Chapters -->
-            <ChapterListItem
+              <!-- Chapters -->            <ChapterListItem
               v-for="(chapter, index) in chapters"
               :key="chapter.id"
               :title="`Chapter ${index + 1}`"
               :isActive="currentChapter === index"
+              :isFirstChapter="index === 0"
               @click="selectChapter(index)"
+              @delete="deleteChapter(index)"
             />
             
             <!-- Back Page -->
@@ -443,6 +444,14 @@ const createNewChapter = () => {
     title: `Chapter ${chapters.value.length + 1}`
   };
   chapters.value.push(newChapter);
+};
+
+const deleteChapter = (index) => {
+  if (index === 0) return; // Prevent deleting first chapter
+  chapters.value.splice(index, 1);
+  if (currentChapter.value >= index) {
+    currentChapter.value = Math.max(0, currentChapter.value - 1);
+  }
 };
 
 // Computed properties
