@@ -83,8 +83,7 @@
             </div>
               <!-- Chapters -->            <ChapterListItem
               v-for="(chapter, index) in chapters"
-              :key="chapter.id"
-              :title="`Chapter ${index + 1}`"
+              :key="chapter.id"              :title="chapter.title"
               :isActive="currentChapter === index"
               :isFirstChapter="index === 0"
               @click="selectChapter(index)"
@@ -704,7 +703,9 @@ const triggerZoomChange = () => {
 // Page content management
 const updatePageTitle = (title) => {
   if (pages.value[0]) {
-    pages.value[0].title = title;
+    const newTitle = title || '';
+    pages.value[0].title = newTitle;
+    chapters.value[currentChapter.value].title = newTitle;
   }
 };
 
