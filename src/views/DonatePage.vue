@@ -135,17 +135,25 @@
 }
 
 .header h1 {
-  font-size: 2.5rem;
+  font-size: 4rem;
+  font-weight: 900;
   margin-bottom: 16px;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
-  color: #666;
+  color: #4a4a4a;
   font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .progress-section {
   margin-bottom: 60px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .progress-info {
@@ -156,14 +164,16 @@
 }
 
 .amount .current {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #E9184C;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #ff1654;
+  letter-spacing: -0.02em;
 }
 
 .amount .target {
   color: #666;
-  margin-left: 8px;
+  margin-left: 4px;
+  font-size: 1.1rem;
 }
 
 .percentage {
@@ -171,16 +181,16 @@
 }
 
 .progress-bar {
-  height: 12px;
-  background: #f0f0f0;
-  border-radius: 6px;
+  height: 16px;
+  background: #f5f5f5;
+  border-radius: 8px;
   overflow: hidden;
 }
 
 .progress {
   height: 100%;
-  background: #E9184C;
-  border-radius: 6px;
+  background: #ff1654;
+  border-radius: 8px;
   transition: width 0.3s ease;
 }
 
