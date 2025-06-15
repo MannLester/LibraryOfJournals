@@ -751,42 +751,97 @@ const handlePageBecameEmpty = async (pageIndex) => {
     if (isLeftPageInSpread) {
       // Left page became empty, go to previous spread
       console.log('Left page became empty, navigating to previous spread');
-      currentDoublePageIndex.value = currentDoublePageIndex.value - 1;
       
-      // Focus on the right page of the previous spread
+      // Calculate the target page index BEFORE changing currentDoublePageIndex
+      // We want the right page of the previous spread
+      // Special case: When we're at spread 1 (pages 2-3) and deleting page 2 (left), 
+      // we want to focus on page 1 (right of spread 0, which is the chapter page)
+      const targetSpreadIndex = currentDoublePageIndex.value - 1;
+      
+      // In spread 0, the right page is the chapter page (index 0)
+      // In all other spreads, right page is (spreadIndex * 2) + 1
+      let targetPageIndex;
+      if (targetSpreadIndex === 0) {
+        targetPageIndex = 1; // The right page of spread 0 is always index 1
+      } else {
+        targetPageIndex = targetSpreadIndex * 2 + 1; // Right page of target spread
+      }
+      
+      console.log('Target page calculation:', {
+        currentDoublePageIndex: currentDoublePageIndex.value,
+        targetSpreadIndex,
+        targetPageIndex,
+        formula: `${targetSpreadIndex} * 2 + 1 = ${targetPageIndex}`
+      });
+      
+      // Now update the current double page index
+      currentDoublePageIndex.value = targetSpreadIndex;
+      
+      console.log('🔍 DEBUG handlePageBecameEmpty - AFTER UPDATING currentDoublePageIndex:', {
+        newCurrentDoublePageIndex: currentDoublePageIndex.value,
+        newLeftPageIndex: leftPageIndex.value,
+        newRightPageIndex: rightPageIndex.value,
+        targetPageIndex,
+        targetSpreadIndex,
+        normalPageRefsKeys: Object.keys(normalPageRefs.value),
+        hasTargetPageRef: !!normalPageRefs.value[targetPageIndex],
+        hasChapterPageRef: !!chapterPageRef.value,
+        formula: `${targetSpreadIndex} * 2 + 1 = ${targetPageIndex}`
+      });
+      
+      // Focus on the RIGHT page of the previous spread
       setTimeout(() => {
-        const prevRightPageIndex = currentDoublePageIndex.value * 2 + 1;
-        
-        console.log('Focusing on previous right page:', {
-          prevRightPageIndex,
+        console.log('🔍 DEBUG handlePageBecameEmpty - FOCUSING on right page of previous spread:', {
+          targetPageIndex,
+          targetSpreadIndex,
           currentDoublePageIndex: currentDoublePageIndex.value,
-          calculation: `${currentDoublePageIndex.value} * 2 + 1 = ${prevRightPageIndex}`
+          normalPageRefsAvailable: Object.keys(normalPageRefs.value),
+          hasTargetPageRef: !!normalPageRefs.value[targetPageIndex]
         });
         
-        // Page 1 (index 0) is the chapter page, Page 2 (index 1) is the first normal page
-        if (prevRightPageIndex === 1) {
-          // This is Page 2 (first normal page) - focus on normal page ref
-          console.log('Focusing on normal page at index 1 (Page 2)');
-          const pageRef = normalPageRefs.value[1];
-          if (pageRef) {
-            pageRef.focusAtEnd();
+        // IMPORTANT: Check if we're trying to focus on page 1 (first normal page)
+        if (targetPageIndex === 1) {
+          console.log('🔍 DEBUG handlePageBecameEmpty - Attempting to focus on page index 1 (first normal page)');
+          console.log('🔍 DEBUG handlePageBecameEmpty - normalPageRefs keys:', Object.keys(normalPageRefs.value));
+          console.log('🔍 DEBUG handlePageBecameEmpty - normalPageRefs[1] exists?', !!normalPageRefs.value[1]);
+          
+          // Try to get the page ref directly
+          const pageOneRef = normalPageRefs.value[1];
+          
+          if (pageOneRef) {
+            console.log('🔍 DEBUG handlePageBecameEmpty - Found page 1 ref, focusing');
+            pageOneRef.focusAtEnd();
           } else {
-            console.log('Normal page ref at index 1 not found');
+            console.log('🔍 DEBUG handlePageBecameEmpty - Page 1 ref not found, checking if it might be the chapter page');
+            // As a fallback, try the chapter page
+            if (chapterPageRef.value) {
+              console.log('🔍 DEBUG handlePageBecameEmpty - Focusing on chapter page as fallback');
+              chapterPageRef.value.focusContentAtEnd();
+            } else {
+              console.log('🔍 DEBUG handlePageBecameEmpty - CRITICAL ERROR: Neither page 1 ref nor chapter page ref found');
+            }
           }
-        } else if (prevRightPageIndex === 0) {
+        } else if (targetPageIndex === 0) {
           // This should never happen for right page, but just in case
-          console.log('Focusing on chapter page (this should not happen for right page)');
+          console.log('🔍 DEBUG handlePageBecameEmpty - Focusing on chapter page (this should not happen for right page)');
           if (chapterPageRef.value) {
             chapterPageRef.value.focusContentAtEnd();
+          } else {
+            console.log('🔍 DEBUG handlePageBecameEmpty - CRITICAL ERROR: Chapter page ref not found');
           }
         } else {
           // Other normal pages
-          console.log(`Focusing on normal page at index ${prevRightPageIndex}`);
-          const pageRef = normalPageRefs.value[prevRightPageIndex];
+          console.log(`🔍 DEBUG handlePageBecameEmpty - Focusing on normal page at index ${targetPageIndex}`);
+          console.log('🔍 DEBUG handlePageBecameEmpty - Available refs:', Object.keys(normalPageRefs.value));
+          
+          const pageRef = normalPageRefs.value[targetPageIndex];
           if (pageRef) {
+            console.log('🔍 DEBUG handlePageBecameEmpty - Found page ref, focusing');
             pageRef.focusAtEnd();
           } else {
-            console.log(`Normal page ref at index ${prevRightPageIndex} not found`);
+            console.log(`🔍 DEBUG handlePageBecameEmpty - CRITICAL ERROR: Normal page ref at index ${targetPageIndex} not found`);
+            console.log('🔍 DEBUG handlePageBecameEmpty - Pages array length:', pages.value.length);
+            console.log('🔍 DEBUG handlePageBecameEmpty - All pages:', pages.value.map((p, i) => ({ index: i, type: p.type })));
           }
         }
       }, 100);
@@ -928,6 +983,17 @@ const handleDeletePage = (pageIndex) => {
   // Store the current double page index before deletion
   const currentSpreadIndex = currentDoublePageIndex.value;
   
+  console.log('🔍 DEBUG handleDeletePage - BEFORE DELETION:', {
+    pageIndex,
+    isLeftPageInSpread,
+    currentDoublePageIndex: currentDoublePageIndex.value,
+    leftPageIndex: leftPageIndex.value,
+    rightPageIndex: rightPageIndex.value,
+    pagesLength: pages.value.length,
+    allPages: pages.value.map((p, i) => ({ index: i, type: p.type, hasContent: !!p.content })),
+    normalPageRefs: Object.keys(normalPageRefs.value)
+  });
+  
   // Delete the page
   pages.value.splice(pageIndex, 1);
   
@@ -936,21 +1002,92 @@ const handleDeletePage = (pageIndex) => {
     if (isLeftPageInSpread) {
       // If deleting left page in a spread, go back to previous spread
       console.log('Deleted left page in spread, navigating to previous spread');
-      currentDoublePageIndex.value = currentSpreadIndex - 1;
+      
+      // Calculate the target page index BEFORE changing currentDoublePageIndex
+      // We want the right page of the previous spread
+      // Special case: When we're at spread 1 (pages 2-3) and deleting page 2 (left), 
+      // we want to focus on page 1 (right of spread 0, which is the chapter page)
+      const targetSpreadIndex = currentSpreadIndex - 1;
+      
+      // In spread 0, the right page is the chapter page (index 0)
+      // In all other spreads, right page is (spreadIndex * 2) + 1
+      let targetPageIndex;
+      if (targetSpreadIndex === 0) {
+        targetPageIndex = 1; // The right page of spread 0 is always index 1
+      } else {
+        targetPageIndex = targetSpreadIndex * 2 + 1; // Right page of target spread
+      }
+      
+      console.log('Target page calculation:', {
+        currentSpreadIndex,
+        targetSpreadIndex,
+        targetPageIndex,
+        formula: `${targetSpreadIndex} * 2 + 1 = ${targetPageIndex}`
+      });
+      
+      // Now update the current double page index
+      currentDoublePageIndex.value = targetSpreadIndex;
+      
+      console.log('🔍 DEBUG - AFTER UPDATING currentDoublePageIndex:', {
+        newCurrentDoublePageIndex: currentDoublePageIndex.value,
+        newLeftPageIndex: leftPageIndex.value,
+        newRightPageIndex: rightPageIndex.value,
+        targetPageIndex,
+        targetSpreadIndex,
+        normalPageRefsKeys: Object.keys(normalPageRefs.value),
+        hasTargetPageRef: !!normalPageRefs.value[targetPageIndex],
+        hasChapterPageRef: !!chapterPageRef.value
+      });
       
       // Use a longer timeout to ensure DOM is fully updated
       setTimeout(() => {
-        // Focus on the right page of the previous spread
-        const prevRightPageIndex = currentDoublePageIndex.value * 2 + 1;
+        console.log('🔍 DEBUG - FOCUSING on right page of previous spread:', {
+          targetPageIndex,
+          targetSpreadIndex,
+          currentDoublePageIndex: currentDoublePageIndex.value,
+          normalPageRefsAvailable: Object.keys(normalPageRefs.value),
+          hasTargetPageRef: !!normalPageRefs.value[targetPageIndex]
+        });
         
-        if (prevRightPageIndex === 1 && chapterPageRef.value) {
-          // Focus on chapter page content
-          chapterPageRef.value.focusContentAtEnd();
+        // IMPORTANT: Check if we're trying to focus on page 1 (first normal page)
+        if (targetPageIndex === 1) {
+          console.log('🔍 DEBUG - Attempting to focus on page index 1 (first normal page)');
+          console.log('🔍 DEBUG - normalPageRefs keys:', Object.keys(normalPageRefs.value));
+          console.log('🔍 DEBUG - normalPageRefs[1] exists?', !!normalPageRefs.value[1]);
+          
+          // Try to get the page ref directly
+          const pageOneRef = normalPageRefs.value[1];
+          
+          if (pageOneRef) {
+            console.log('🔍 DEBUG - Found page 1 ref, focusing');
+            pageOneRef.focusAtEnd();
+          } else {
+            console.log('🔍 DEBUG - Page 1 ref not found, checking if it might be the chapter page');
+            // As a fallback, try the chapter page
+            if (chapterPageRef.value) {
+              console.log('🔍 DEBUG - Focusing on chapter page as fallback');
+              chapterPageRef.value.focusContentAtEnd();
+            } else {
+              console.log('🔍 DEBUG - CRITICAL ERROR: Neither page 1 ref nor chapter page ref found');
+            }
+          }
         } else {
           // Focus on normal page
-          const prevRightPageRef = normalPageRefs.value[prevRightPageIndex];
-          if (prevRightPageRef) {
-            prevRightPageRef.focusAtEnd();
+          const targetPageRef = normalPageRefs.value[targetPageIndex];
+          console.log('🔍 DEBUG - Target page ref:', {
+            hasTargetPageRef: !!targetPageRef,
+            targetPageIndex,
+            availableRefs: Object.keys(normalPageRefs.value)
+          });
+          
+          if (targetPageRef) {
+            console.log('🔍 DEBUG - Calling focusAtEnd on target page ref');
+            targetPageRef.focusAtEnd();
+          } else {
+            console.log('🔍 DEBUG - CRITICAL ERROR: Target page ref not found!');
+            console.log('🔍 DEBUG - Available refs:', Object.keys(normalPageRefs.value));
+            console.log('🔍 DEBUG - Pages array length:', pages.value.length);
+            console.log('🔍 DEBUG - All pages:', pages.value.map((p, i) => ({ index: i, type: p.type })));
           }
         }
       }, 100); // Give more time for DOM updates
