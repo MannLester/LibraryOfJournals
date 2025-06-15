@@ -132,7 +132,7 @@
       <div class="content-wrapper">
         <!-- Editor Area -->
         <div class="editor-area">
-          <div class="editor-content" :class="{ 'double-page': isDoublePage, 'page-turning': isPageTurning }">
+          <div class="editor-content" :class="{ 'double-page': isDoublePage }">
             
             <!-- Single Page View: Vertical Stack -->
             <template v-if="!isDoublePage">
@@ -170,7 +170,7 @@
             <template v-else>
               <div class="book-container">
                 <!-- Current Spread -->
-                <div class="book-spread" :class="{ 'turning': isPageTurning }" ref="currentSpread">
+                <div class="book-spread" ref="currentSpread">
                   <!-- Left Page -->
                   <div class="book-page left-page">
                     <div class="page-wrapper">
@@ -212,40 +212,26 @@
                   <!-- Book Spine/Gutter -->
                   <div class="book-spine"></div>
 
-                  <!-- Right Page with Enhanced Animation -->
+                  <!-- Right Page -->
                   <div class="book-page right-page" ref="rightPageElement">
                     <div class="page-wrapper" ref="rightPageWrapper">
-                      <!-- Page Back (what shows when page is flipped) -->
-                      <div class="page-back" ref="pageBack">
-                        <div class="content-isolation-wrapper">
-                          <div class="page-back-content">
-                            <!-- Next spread content will be shown here during transition -->
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <!-- Page Front (current content) -->
-                      <div class="page-front" ref="pageFront">
-                        <div class="content-isolation-wrapper">
-                          <NormalPage
-                            v-if="rightPageData"
-                            :key="rightPageData.id"
-                            :page="rightPageData"
-                            :pageIndex="rightPageIndex"
-                            :isDoublePageRight="true"
-                            :isInDoublePageMode="true"
-                            @update:content="updatePageContent"
-                            @create-next-page="handleCreateNextPage"
-                            @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
-                            @focus-next-page="handleFocusNextPage"
-                            @delete-current-page="handleDeletePage"
-                            @page-became-empty="handlePageBecameEmpty"
-                            :ref="el => setNormalPageRef(el, rightPageIndex)"
-                          />
-                          <div v-else class="empty-page">
-                            <div class="empty-page-content">No content</div>
-                          </div>
-                        </div>
+                      <NormalPage
+                        v-if="rightPageData"
+                        :key="rightPageData.id"
+                        :page="rightPageData"
+                        :pageIndex="rightPageIndex"
+                        :isDoublePageRight="true"
+                        :isInDoublePageMode="true"
+                        @update:content="updatePageContent"
+                        @create-next-page="handleCreateNextPage"
+                        @push-overflow-to-next-page="handlePushOverflowDoublePageMode"
+                        @focus-next-page="handleFocusNextPage"
+                        @delete-current-page="handleDeletePage"
+                        @page-became-empty="handlePageBecameEmpty"
+                        :ref="el => setNormalPageRef(el, rightPageIndex)"
+                      />
+                      <div v-else class="empty-page">
+                        <div class="empty-page-content">No content</div>
                       </div>
                     </div>
                   </div>
@@ -267,7 +253,7 @@
               class="pagination-btn" 
               title="Previous spread"
               @click="previousSpread"
-              :disabled="currentDoublePageIndex <= 0 || isPageTurning"
+              :disabled="currentDoublePageIndex <= 0"
             >
               <span class="icon-arrow-left"></span> Previous
             </button>
@@ -282,7 +268,7 @@
               class="pagination-btn" 
               title="Next spread"
               @click="nextSpreadHandler"
-              :disabled="!canGoToNextSpread || isPageTurning"
+              :disabled="!canGoToNextSpread"
             >
               Next <span class="icon-arrow-right"></span>
             </button>
@@ -336,7 +322,7 @@ const searchQuery = ref('');
 // View mode state
 const isDoublePage = ref(false);
 const currentDoublePageIndex = ref(0);
-const isPageTurning = ref(false);
+// Page turning state removed
 
 // Enhanced page turning refs
 const rightPageElement = ref(null);
@@ -547,114 +533,15 @@ const toggleViewMode = (mode) => {
   }
 };
 
-// ENHANCED: Realistic paper turning animation with physics
-const performPageTurn = async (direction = 'next') => {
-  if (isPageTurning.value) return;
-  
-  isPageTurning.value = true;
-  
-  const rightPage = rightPageElement.value;
-  const pageWrapper = rightPageWrapper.value;
-  const front = pageFront.value;
-  const back = pageBack.value;
-  
-  if (!rightPage || !pageWrapper || !front || !back) {
-    isPageTurning.value = false;
-    return;
-  }
-
-  // Prepare the page back with next content preview
+// Simplified page turn without animation
+const performPageTurn = (direction = 'next') => {
+  // Prepare next page content if needed
   if (direction === 'next') {
     prepareNextPageContent();
   }
-
-  // Add turning class to trigger CSS animations
-  rightPage.classList.add('turning');
-  pageWrapper.classList.add('page-turning');
   
-  // Create realistic paper physics with multiple stages
-  await animatePageTurn(direction);
-  
-  // Clean up and show new content
-  rightPage.classList.remove('turning');
-  pageWrapper.classList.remove('page-turning');
-  
-  isPageTurning.value = false;
-};
-
-// ENHANCED: Multi-stage page turning animation
-const animatePageTurn = async (direction) => {
-  const duration = 1200; // Longer, more realistic duration
-  const stages = [
-    { progress: 0, rotation: 0, curl: 0, shadow: 0 },
-    { progress: 0.2, rotation: -15, curl: 5, shadow: 0.1 },
-    { progress: 0.4, rotation: -45, curl: 15, shadow: 0.3 },
-    { progress: 0.6, rotation: -90, curl: 25, shadow: 0.5 },
-    { progress: 0.8, rotation: -135, curl: 15, shadow: 0.3 },
-    { progress: 1, rotation: -180, curl: 0, shadow: 0 }
-  ];
-
-  const rightPage = rightPageElement.value;
-  const pageWrapper = rightPageWrapper.value;
-
-  for (let i = 0; i < stages.length; i++) {
-    const stage = stages[i];
-    const nextStage = stages[i + 1];
-    
-    if (nextStage) {
-      await animateToStage(stage, nextStage, duration / stages.length);
-    }
-  }
-};
-
-// Animate between two stages with easing
-const animateToStage = (fromStage, toStage, duration) => {
-  return new Promise(resolve => {
-    const startTime = performance.now();
-    const rightPage = rightPageElement.value;
-    const pageWrapper = rightPageWrapper.value;
-    
-    const animate = (currentTime) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // Use cubic-bezier easing for natural paper movement
-      const eased = easeOutCubic(progress);
-      
-      // Interpolate between stages
-      const rotation = lerp(fromStage.rotation, toStage.rotation, eased);
-      const curl = lerp(fromStage.curl, toStage.curl, eased);
-      const shadow = lerp(fromStage.shadow, toStage.shadow, eased);
-      
-      // Apply transformations
-      if (pageWrapper) {
-        pageWrapper.style.transform = `
-          rotateY(${rotation}deg) 
-          rotateX(${curl * 0.3}deg)
-          translateZ(${curl}px)
-        `;
-        pageWrapper.style.filter = `drop-shadow(${shadow * 10}px 0 ${shadow * 20}px rgba(0,0,0,${shadow * 0.4}))`;
-      }
-      
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        resolve();
-      }
-    };
-    
-    requestAnimationFrame(animate);
-  });
-};
-
-// Easing function for natural movement
-const easeOutCubic = (t) => {
-  return 1 - Math.pow(1 - t, 3);
-};
-
-// Linear interpolation
-const lerp = (start, end, factor) => {
-  return start + (end - start) * factor;
+  // No animation, just update the state immediately
+  console.log('Instant page turn:', direction);
 };
 
 // Prepare next page content for smooth transition
@@ -666,23 +553,23 @@ const prepareNextPageContent = () => {
   // Implementation depends on your specific content structure
 };
 
-const previousSpread = async () => {
-  if (currentDoublePageIndex.value > 0 && !isPageTurning.value) {
-    await performPageTurn('prev');
+const previousSpread = () => {
+  if (currentDoublePageIndex.value > 0) {
+    performPageTurn('prev');
     currentDoublePageIndex.value--;
   }
 };
 
-const nextSpreadHandler = async () => {
-  if (canGoToNextSpread.value && !isPageTurning.value) {
-    await performPageTurn('next');
+const nextSpreadHandler = () => {
+  if (canGoToNextSpread.value) {
+    performPageTurn('next');
     currentDoublePageIndex.value++;
   }
 };
 
-const autoAdvanceToNextSpread = async () => {
+const autoAdvanceToNextSpread = () => {
   console.log('Auto-advancing to next spread...');
-  await performPageTurn('next');
+  performPageTurn('next');
   currentDoublePageIndex.value++;
 };
 
