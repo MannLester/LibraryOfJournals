@@ -32,8 +32,20 @@
         
         <div class="nav-section">
           <div class="mode-toggle">
-            <button class="mode-btn active">Write Mode</button>
-            <button class="mode-btn">Present Mode</button>
+            <button 
+              class="view-toggle-btn" 
+              :class="{ 'active': !isPresentMode }"
+              @click="toggleModeType('write')"
+            >
+              Write Mode
+            </button>
+            <button 
+              class="view-toggle-btn"
+              :class="{ 'active': isPresentMode }"
+              @click="toggleModeType('present')"
+            >
+              Present Mode
+            </button>
           </div>
         </div>
       </div>
@@ -321,6 +333,7 @@ const searchQuery = ref('');
 
 // View mode state
 const isDoublePage = ref(false);
+const isPresentMode = ref(false);
 const currentDoublePageIndex = ref(0);
 // Page turning state removed
 
@@ -531,6 +544,14 @@ const toggleViewMode = (mode) => {
     zoomLevel.value = 90;
     triggerZoomChange();
   }
+};
+
+// Toggle between write and present mode
+const toggleModeType = (mode) => {
+  isPresentMode.value = mode === 'present';
+  
+  // Additional functionality for switching modes could be added here
+  // For example, hiding editing controls in present mode
 };
 
 // Simplified page turn without animation
@@ -1258,22 +1279,7 @@ const handleFocusNextPage = ({ pageIndex, nextPageIndex, cursorOffset }) => {
   font-weight: 600;
 }
 
-.mode-btn {
-  padding: 8px 16px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: 14px;
-  color: #666;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.mode-btn.active {
-  background: #f0f0f0;
-  color: #333;
-  font-weight: 500;
-}
+/* Mode buttons now use view-toggle-btn class for consistent styling */
 
 .save-btn {
   padding: 8px 16px;
