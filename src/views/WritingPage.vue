@@ -317,6 +317,7 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue';
+import useAuth from '../composables/useAuth';
 import ChapterPage from '../components/pages/ChapterPage.vue';
 import NormalPage from '../components/pages/NormalPage.vue';
 import ChapterListItem from '../components/ChapterListItem.vue';
@@ -361,6 +362,9 @@ const currentPage = ref(1);
 const chapterPageRef = ref(null);
 const normalPageRefs = ref({});
 
+// Auth state
+const { user, isAuthenticated } = useAuth();
+
 // Save chapter as PDF
 const isSaving = ref(false);
 const saveError = ref(null);
@@ -380,10 +384,20 @@ const saveChapter = async () => {
       throw new Error('Editor content element not found. Please try again.');
     }
 
-    // Get the current user ID and document IDs (replace with actual values)
-    const userId = 'current-user'; // TODO: Get from auth
+    // Get the current user ID from Firebase Auth
+    if (!user.value || !user.value.uid) {
+      throw new Error('User not authenticated. Please log in to save chapters.');
+    }
+    const userId = user.value.uid;
+    
+    // Use the actual chapter ID from the current chapter
+    const currentChapterObj = chapters.value[currentChapter.value];
+    if (!currentChapterObj || !currentChapterObj.id) {
+      throw new Error('Current chapter not found or has no ID');
+    }
+    
+    const chapterId = currentChapterObj.id.toString();
     const journalId = 'current-journal'; // TODO: Get from route/params
-    const chapterId = 'current-chapter'; // TODO: Get from route/params
     
     if (!userId || !journalId || !chapterId) {
       throw new Error('Missing required document IDs');

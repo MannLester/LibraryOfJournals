@@ -230,9 +230,20 @@ export async function saveChapterAsTextPdf(contentElement, { chapterId, userId, 
     
     console.log('PDF generated successfully, size:', pdfBlob.size, 'bytes');
     
-    // Generate a unique filename using UUID
-    const uniqueId = uuidv4();
-    const fileName = `${uniqueId}.pdf`;
+    // Sanitize chapter name/number for safe filenames
+    function sanitizeFilename(name) {
+      return name
+        .toString()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-') // replace non-alphanumeric with dash
+        .replace(/^-+|-+$/g, '')     // trim leading/trailing dashes
+        .replace(/-+/g, '-')         // collapse multiple dashes
+        || 'chapter';
+    }
+    
+    const sanitizedChapter = sanitizeFilename(chapterId);
+    // Use the correct file path format that includes the user ID for isolation
+    const fileName = `${userId}/${sanitizedChapter}.pdf`;
     console.log('Uploading PDF to Supabase bucket "pdfs" with filename:', fileName);
     
     const { publicUrl, error } = await uploadFile('pdfs', fileName, pdfBlob);
