@@ -448,7 +448,7 @@ const saveChapter = async () => {
 
 // Chapter management
 const chapters = ref([
-  { id: 1, title: 'Chapter 1' }
+  { id: 'chapter-1', title: 'Chapter 1' }
 ]);
 const currentChapter = ref(0);
 
@@ -466,9 +466,10 @@ const selectChapter = (index) => {
 };
 
 const createNewChapter = () => {
+  const chapterNumber = chapters.value.length + 1;
   const newChapter = {
-    id: Date.now(),
-    title: `Chapter ${chapters.value.length + 1}`
+    id: `chapter-${chapterNumber}`,
+    title: `Chapter ${chapterNumber}`
   };
   chapters.value.push(newChapter);
 };
