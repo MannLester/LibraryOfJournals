@@ -356,6 +356,18 @@ const pages = ref([
   }
 ]);
 
+// Store pages for each chapter
+const chapterPagesMap = ref({
+  'chapter-1': [
+    {
+      id: 1,
+      type: 'chapter',
+      title: '',
+      content: ''
+    }
+  ]
+});
+
 const currentPage = ref(1);
 
 // Component refs
@@ -370,7 +382,7 @@ const isSaving = ref(false);
 const saveError = ref(null);
 const saveSuccess = ref(false);
 
-const saveChapter = async () => {
+const saveChapter = async (suppressAlert = false) => {
   if (isSaving.value) return;
   
   isSaving.value = true;
@@ -390,50 +402,35 @@ const saveChapter = async () => {
     }
     const userId = user.value.uid;
     
-    // Use the actual chapter ID from the current chapter
-    const currentChapterObj = chapters.value[currentChapter.value];
-    if (!currentChapterObj || !currentChapterObj.id) {
-      throw new Error('Current chapter not found or has no ID');
-    }
+    // Get current chapter ID
+    const currentChapterId = chapters.value[currentChapter.value].id;
     
-    const chapterId = currentChapterObj.id.toString();
-    const journalId = 'current-journal'; // TODO: Get from route/params
-    
-    if (!userId || !journalId || !chapterId) {
-      throw new Error('Missing required document IDs');
-    }
-
-    console.log('Starting PDF generation...');
-    
-    // Generate and save PDF
-    const { publicUrl, error } = await saveChapterAsTextPdf(contentElement, {
-      chapterId,
-      userId,
-      journalId
+    // Save to Supabase Storage
+    const publicUrl = await saveChapterAsTextPdf(contentElement, {
+      chapterId: currentChapterId,
+      userId: userId,
+      journalId: 'default-journal' // TODO: Replace with actual journal ID when Firebase is integrated
     });
-
-    if (error) {
-      throw error;
-    }
-
-    console.log('PDF saved successfully:', publicUrl);
     
-    // Here you would typically update the chapter's pdfPath in Firebase
-    // Example:
-    // await updateDoc(doc(db, 'users', userId, 'journals', journalId, 'chapters', chapterId), {
-    //   pdfPath: publicUrl,
-    //   updatedAt: serverTimestamp()
-    // });
+    // Store the current pages in the chapter pages map
+    chapterPagesMap.value[currentChapterId] = JSON.parse(JSON.stringify(pages.value));
+    
+    // Reset the content modified flag since we just saved
+    contentModified.value = false;
     
     saveSuccess.value = true;
     
-    // Show success message
-    alert('Chapter saved successfully!');
+    // Show success message (unless suppressed for chapter switching)
+    if (!suppressAlert) {
+      alert('Chapter saved successfully!');
+    }
     
   } catch (error) {
     console.error('Error saving chapter:', error);
     saveError.value = error.message || 'Failed to save chapter';
-    alert(`Error: ${saveError.value}`);
+    if (!suppressAlert) {
+      alert(`Error: ${saveError.value}`);
+    }
   } finally {
     isSaving.value = false;
     
@@ -452,6 +449,9 @@ const chapters = ref([
 ]);
 const currentChapter = ref(0);
 
+// Flag to track if content has been modified since last save
+const contentModified = ref(false);
+
 // Filter chapters based on search query
 const filteredChapters = computed(() => {
   const query = searchQuery.value.toLowerCase().trim();
@@ -461,24 +461,148 @@ const filteredChapters = computed(() => {
   );
 });
 
-const selectChapter = (index) => {
-  currentChapter.value = index;
+const selectChapter = async (index) => {
+  if (index === currentChapter.value) return; // No change needed if selecting the same chapter
+  
+  try {
+    // Save current chapter content before switching if it was modified
+    if (contentModified.value) {
+      await saveCurrentChapterContent();
+    }
+    
+    // Update current chapter index
+    const previousChapterIndex = currentChapter.value;
+    currentChapter.value = index;
+    
+    // Load the selected chapter's content
+    await loadChapterContent(index);
+    
+    // Reset the content modified flag
+    contentModified.value = false;
+    
+    console.log(`Switched from chapter ${previousChapterIndex + 1} to chapter ${index + 1}`);
+  } catch (error) {
+    console.error('Error switching chapters:', error);
+    alert(`Error switching chapters: ${error.message}`);
+  }
 };
 
-const createNewChapter = () => {
+// Save the current chapter's content to Supabase
+const saveCurrentChapterContent = async () => {
+  const currentChapterId = chapters.value[currentChapter.value].id;
+  console.log(`Saving content for chapter: ${currentChapterId}`);
+  
+  try {
+    // Store the current pages in the chapter pages map
+    chapterPagesMap.value[currentChapterId] = JSON.parse(JSON.stringify(pages.value));
+    
+    // Save to Supabase
+    await saveChapter(true); // Pass true to suppress success alert when switching chapters
+  } catch (error) {
+    console.error('Error saving current chapter content:', error);
+    throw new Error(`Failed to save chapter content: ${error.message}`);
+  }
+};
+
+// Load content for the selected chapter
+const loadChapterContent = async (chapterIndex) => {
+  const chapterId = chapters.value[chapterIndex].id;
+  console.log(`Loading content for chapter: ${chapterId}`);
+  
+  try {
+    // Check if we have content for this chapter in our local map
+    if (chapterPagesMap.value[chapterId]) {
+      // Use the stored pages for this chapter
+      pages.value = JSON.parse(JSON.stringify(chapterPagesMap.value[chapterId]));
+      console.log(`Loaded ${pages.value.length} pages from local cache for chapter ${chapterId}`);
+    } else {
+      // Initialize with empty content for new chapters
+      pages.value = [
+        {
+          id: Date.now(),
+          type: 'chapter',
+          title: chapters.value[chapterIndex].title,
+          content: ''
+        }
+      ];
+      
+      // Store in the chapter pages map
+      chapterPagesMap.value[chapterId] = JSON.parse(JSON.stringify(pages.value));
+      console.log(`Initialized new content for chapter ${chapterId}`);
+    }
+    
+    // Reset page references and double page index
+    normalPageRefs.value = {};
+    if (isDoublePage.value) {
+      currentDoublePageIndex.value = 0;
+    }
+    
+    // Update UI
+    nextTick(() => {
+      // This ensures the UI updates with the new content
+      if (chapterPageRef.value) {
+        chapterPageRef.value.$forceUpdate();
+      }
+    });
+  } catch (error) {
+    console.error('Error loading chapter content:', error);
+    throw new Error(`Failed to load chapter content: ${error.message}`);
+  }
+};
+
+const createNewChapter = async () => {
+  // Save current chapter content before creating a new one
+  if (contentModified.value) {
+    try {
+      await saveCurrentChapterContent();
+    } catch (error) {
+      console.error('Error saving current chapter before creating new one:', error);
+      // Continue with creating new chapter even if save fails
+    }
+  }
+  
   const chapterNumber = chapters.value.length + 1;
+  const newChapterId = `chapter-${chapterNumber}`;
   const newChapter = {
-    id: `chapter-${chapterNumber}`,
+    id: newChapterId,
     title: `Chapter ${chapterNumber}`
   };
+  
+  // Add the new chapter to the chapters array
   chapters.value.push(newChapter);
+  
+  // Initialize empty pages for the new chapter
+  chapterPagesMap.value[newChapterId] = [
+    {
+      id: Date.now(),
+      type: 'chapter',
+      title: newChapter.title,
+      content: ''
+    }
+  ];
+  
+  // Switch to the new chapter
+  await selectChapter(chapters.value.length - 1);
 };
 
-const deleteChapter = (index) => {
+const deleteChapter = async (index) => {
   if (index === 0) return; // Prevent deleting first chapter
+  
+  const chapterId = chapters.value[index].id;
+  
+  // Remove the chapter from the chapters array
   chapters.value.splice(index, 1);
-  if (currentChapter.value >= index) {
-    currentChapter.value = Math.max(0, currentChapter.value - 1);
+  
+  // Remove the chapter's pages from the map
+  delete chapterPagesMap.value[chapterId];
+  
+  // If we're deleting the current chapter, switch to another one
+  if (currentChapter.value === index) {
+    const newIndex = Math.max(0, index - 1);
+    await selectChapter(newIndex);
+  } else if (currentChapter.value > index) {
+    // Adjust current chapter index if we deleted a chapter before the current one
+    currentChapter.value = currentChapter.value - 1;
   }
 };
 
@@ -644,12 +768,14 @@ const updatePageTitle = (title) => {
     const cleanTitle = title?.trim() || '';
     pages.value[0].title = cleanTitle;
     chapters.value[currentChapter.value].title = cleanTitle;
+    contentModified.value = true; // Mark content as modified
   }
 };
 
 const updatePageContent = ({ index, content }) => {
   if (pages.value[index]) {
     pages.value[index].content = content;
+    contentModified.value = true; // Mark content as modified
   }
 };
 
@@ -884,6 +1010,7 @@ const handleCreateNextPage = ({ pageIndex, overflowContent }) => {
   };
   
   pages.value.splice(pageIndex + 1, 0, newPage);
+  contentModified.value = true; // Mark content as modified
   
   nextTick(() => {
     const newPageRef = normalPageRefs.value[pageIndex + 1];
@@ -1043,6 +1170,11 @@ const goToHome = () => {
 
 onMounted(() => {
   triggerZoomChange();
+  
+  // Initialize the first chapter's pages in the map if not already there
+  if (!chapterPagesMap.value['chapter-1']) {
+    chapterPagesMap.value['chapter-1'] = JSON.parse(JSON.stringify(pages.value));
+  }
 });
 
 const emit = defineEmits([
