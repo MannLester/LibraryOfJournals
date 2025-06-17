@@ -242,7 +242,8 @@ export async function saveChapterAsTextPdf(contentElement, { chapterId, userId, 
     }
     
     const sanitizedChapter = sanitizeFilename(chapterId);
-    // Use the correct file path format that includes the user ID for isolation
+    // Simplified file path structure as requested - just userId/chapterId
+    // The uploadFile function will handle versioning by adding a timestamp
     const fileName = `${userId}/${sanitizedChapter}.pdf`;
     console.log('Uploading PDF to Supabase bucket "pdfs" with filename:', fileName);
     
