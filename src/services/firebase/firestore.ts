@@ -2,7 +2,10 @@ import {
   collection, 
   doc, 
   getDoc, 
+  getDocs, 
   setDoc, 
+  query, 
+  where, 
   serverTimestamp 
 } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
@@ -10,6 +13,7 @@ import { db } from './config';
 
 // Collection references
 const accountsCollection = collection(db, 'accounts');
+const journalsCollection = collection(db, 'journals');
 
 // ======================
 // Type Definitions
@@ -80,10 +84,10 @@ export interface ChapterData {
   isDeleted: boolean;  // Soft delete flag
 }
 
-// Collection references (for future use)
-const _journalsCollection = collection(db, 'journals');
-const _getChaptersCollection = (journalId: string) => 
-  collection(db, `journals/${journalId}/channels`);
+// Helper collection references
+const getChaptersCollection = (journalId: string) => 
+  collection(db, `journals/${journalId}/chapters`);
+
 
 /**
  * Get a user account by uid
@@ -113,6 +117,84 @@ export const getAccount = async (uid: string): Promise<AccountData | null> => {
  * @param user Firebase Auth user
  * @returns Promise with account data
  */
+/**
+ * Create a default journal for a user
+ * @param userId User ID to create the journal for
+ * @returns Promise with the created journal data
+ */
+export const createDefaultJournal = async (userId: string): Promise<JournalData> => {
+  try {
+    console.log('Creating default journal for user:', userId);
+    
+    // Check if user already has a journal
+    const userJournalsQuery = query(journalsCollection, where('userId', '==', userId));
+    const existingJournals = await getDocs(userJournalsQuery);
+    
+    if (!existingJournals.empty) {
+      console.log('User already has journals, skipping default journal creation');
+      return existingJournals.docs[0].data() as JournalData;
+    }
+    
+    // Create a new journal document with a generated ID
+    const journalRef = doc(journalsCollection);
+    const journalId = journalRef.id;
+    
+    const journalData: JournalData = {
+      id: journalId,
+      userId: userId,
+      title: 'My Journal',
+      description: 'My first journal',
+      backImage: '',
+      coverImage: '',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      isArchived: false,
+      isDeleted: false,
+      publicLink: '',
+      sharedLink: '',
+      invitedUsers: [],
+      version: 1,
+      wordCount: 0
+    };
+    
+    // Save to Firestore
+    await setDoc(journalRef, journalData);
+    console.log('Default journal created with ID:', journalId);
+    
+    return journalData;
+  } catch (error) {
+    console.error('Error creating default journal:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get journals for a user
+ * @param userId User ID
+ * @returns Promise with array of journal data
+ */
+export const getUserJournals = async (userId: string): Promise<JournalData[]> => {
+  try {
+    const userJournalsQuery = query(
+      journalsCollection, 
+      where('userId', '==', userId),
+      where('isDeleted', '==', false)
+    );
+    
+    const journalsSnapshot = await getDocs(userJournalsQuery);
+    const journals: JournalData[] = [];
+    
+    journalsSnapshot.forEach((doc) => {
+      journals.push({ ...doc.data(), id: doc.id } as JournalData);
+    });
+    
+    return journals;
+  } catch (error) {
+    console.error('Error getting user journals:', error);
+    throw error;
+  }
+};
+
 export const createOrUpdateAccount = async (user: User): Promise<AccountData> => {
   try {
     const { uid, email, displayName, photoURL } = user;
@@ -153,6 +235,12 @@ export const createOrUpdateAccount = async (user: User): Promise<AccountData> =>
     // Save to Firestore
     const accountRef = doc(accountsCollection, uid);
     await setDoc(accountRef, accountData, { merge: true });
+    
+    // If this is a new account, create a default journal
+    if (!existingAccount) {
+      console.log('New account detected, creating default journal');
+      await createDefaultJournal(uid);
+    }
     
     return accountData;
   } catch (error) {
