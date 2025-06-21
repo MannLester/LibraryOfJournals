@@ -67,20 +67,18 @@ export interface JournalData {
 
 export interface ChapterData {
   // Core chapter data
-  id?: string;  // Added by Firestore
-  journalId: string;
-  chapterTitle: string;
-  chapterOrder: number;
-  
-  // Content
-  pdfPath: string;  // Path in storage (e.g., 'users/{uid}/chapters/{chapterId}.pdf')
+  id?: string;        // Document ID
+  journalId: string;  // Parent journal ID
+  chapterTitle: string; // Chapter title
+  chapterOrder: number; // Order in the journal
+  pdfPath: string;    // Path to PDF in storage
+  wordCount: number;  // Word count
   
   // Metadata
-  wordCount: number;
-  updatedAt: any;
+  updatedAt: any;     // Timestamp
+  version: number;    // Version number
   
-  // Versioning
-  version: number;
+  // Status
   isDeleted: boolean;  // Soft delete flag
 }
 
