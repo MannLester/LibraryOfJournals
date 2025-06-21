@@ -26,6 +26,7 @@ export interface AccountData {
   username: string;
   imageLink: string;
   dateJoined: any;
+  journalId?: string;  // Reference to user's default journal
   
   // Sync status
   lastSynced?: any;
@@ -46,6 +47,7 @@ export interface JournalData {
   description: string;
   coverImage?: string;  // URL to cover image
   backImage?: string;   // URL to back cover image
+  chapterPages: string[];  // Array of chapter document IDs
   
   // Timestamps
   createdAt: any;
@@ -144,6 +146,7 @@ export const createDefaultJournal = async (userId: string): Promise<JournalData>
       description: 'My first journal',
       backImage: '',
       coverImage: '',
+      chapterPages: [],  // Initialize with empty array of chapter IDs
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       isArchived: false,
@@ -158,6 +161,10 @@ export const createDefaultJournal = async (userId: string): Promise<JournalData>
     // Save to Firestore
     await setDoc(journalRef, journalData);
     console.log('Default journal created with ID:', journalId);
+    
+    // Update account with journal ID
+    const accountRef = doc(accountsCollection, userId);
+    await setDoc(accountRef, { journalId }, { merge: true });
     
     return journalData;
   } catch (error) {
@@ -237,7 +244,14 @@ export const createOrUpdateAccount = async (user: User): Promise<AccountData> =>
     // If this is a new account, create a default journal
     if (!existingAccount) {
       console.log('New account detected, creating default journal');
-      await createDefaultJournal(uid);
+      const defaultJournal = await createDefaultJournal(uid);
+      
+      // Update the account with the journal ID
+      if (defaultJournal && defaultJournal.id) {
+        await setDoc(accountRef, { journalId: defaultJournal.id }, { merge: true });
+        accountData.journalId = defaultJournal.id;
+        console.log('Updated account with default journal ID:', defaultJournal.id);
+      }
     }
     
     return accountData;
