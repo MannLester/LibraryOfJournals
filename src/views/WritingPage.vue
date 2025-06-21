@@ -322,12 +322,32 @@ import ChapterPage from '../components/pages/ChapterPage.vue';
 import NormalPage from '../components/pages/NormalPage.vue';
 import ChapterListItem from '../components/ChapterListItem.vue';
 import { defineEmits } from 'vue';
-import { saveChapterAsTextPdf } from '../utils/pdfTextUtils';
+import { saveChapterAsTextPdf, fetchPdfAsText, convertPdfTextToHtml } from '../utils/pdfTextUtils';
+import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { db } from '../services/firebase/config';
+import { getAccount, createChapter, updateJournalChapters, getJournalChapters } from '../services/firebase/firestore';
 
 // Zoom state
 const zoomLevel = ref(90);
 const zoomChanged = ref(false);
 let zoomTimeout = null;
+
+/**
+ * Calculate the word count from an HTML element
+ * @param {HTMLElement} element - The element containing the text content
+ * @returns {number} - The word count
+ */
+const calculateWordCount = (element) => {
+  if (!element) return 0;
+  
+  // Get all text content from the element
+  const text = element.textContent || '';
+  
+  // Remove extra whitespace and split by spaces
+  const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+  
+  return words.length;
+};
 
 // Search state
 const searchQuery = ref('');
@@ -337,6 +357,77 @@ const isDoublePage = ref(false);
 const isPresentMode = ref(false);
 const currentDoublePageIndex = ref(0);
 // Page turning state removed
+
+// Load chapters from Firestore when component is mounted
+onMounted(async () => {
+  try {
+    if (!user.value || !user.value.uid) {
+      console.warn('User not authenticated, skipping chapter loading');
+      return;
+    }
+    
+    // Initial load of chapters when component mounts
+    await loadChaptersFromFirestore();
+  } catch (error) {
+    console.error('Error loading chapters on mount:', error);
+  }
+});
+
+// Load chapters from Firestore
+const loadChaptersFromFirestore = async () => {
+  if (isLoadingChapters.value) return;
+  
+  isLoadingChapters.value = true;
+  
+  try {
+    // Get the current user ID from Firebase Auth
+    if (!user.value || !user.value.uid) {
+      throw new Error('User not authenticated. Please log in to load chapters.');
+    }
+    const userId = user.value.uid;
+    
+    // Get the journal ID from the user's account data
+    const accountData = await getAccount(userId);
+    if (!accountData || !accountData.journalId) {
+      throw new Error('Could not retrieve journal ID from your account. Please refresh the page and try again.');
+    }
+    const journalId = accountData.journalId;
+    
+    // Get chapters from Firestore
+    const firestoreChapters = await getJournalChapters(journalId);
+    
+    if (firestoreChapters.length > 0) {
+      // Map Firestore chapters to our local format
+      const mappedChapters = firestoreChapters.map(chapter => ({
+        id: chapter.id,
+        title: chapter.chapterTitle,
+        chapterOrder: chapter.chapterOrder,
+        version: chapter.version
+      }));
+      
+      // Update local chapters array
+      chapters.value = mappedChapters;
+      console.log(`Loaded ${chapters.value.length} chapters from Firestore`);
+      
+      // Select the first chapter
+      if (currentChapter.value >= chapters.value.length) {
+        currentChapter.value = 0;
+      }
+      
+      // Load the current chapter content
+      await loadChapterContent(currentChapter.value);
+    } else if (chapters.value.length === 0) {
+      // If no chapters in Firestore and no local chapters, create a default one
+      console.log('No chapters found, creating default chapter');
+      await createNewChapter();
+    }
+  } catch (error) {
+    console.error('Error loading chapters from Firestore:', error);
+    alert(`Error loading chapters: ${error.message}`);
+  } finally {
+    isLoadingChapters.value = false;
+  }
+};
 
 // Enhanced page turning refs
 const rightPageElement = ref(null);
@@ -402,18 +493,61 @@ const saveChapter = async (suppressAlert = false) => {
     }
     const userId = user.value.uid;
     
-    // Get current chapter ID
+    // Get current chapter ID and data
     const currentChapterId = chapters.value[currentChapter.value].id;
+    const currentChapterData = chapters.value[currentChapter.value];
+    
+    // Get the actual journal ID from the user's account data
+    const accountData = await getAccount(userId);
+    if (!accountData || !accountData.journalId) {
+      throw new Error('Could not retrieve journal ID from your account. Please refresh the page and try again.');
+    }
+    const journalId = accountData.journalId;
     
     // Save to Supabase Storage
     const publicUrl = await saveChapterAsTextPdf(contentElement, {
       chapterId: currentChapterId,
       userId: userId,
-      journalId: 'default-journal' // TODO: Replace with actual journal ID when Firebase is integrated
+      journalId: journalId
     });
     
     // Store the current pages in the chapter pages map
     chapterPagesMap.value[currentChapterId] = JSON.parse(JSON.stringify(pages.value));
+    
+    // Calculate word count
+    const wordCount = calculateWordCount(contentElement);
+    
+    // Check if the chapter document exists in Firestore
+    const chapterRef = doc(db, `journals/${journalId}/chapters/${currentChapterId}`);
+    const chapterDoc = await getDoc(chapterRef);
+    
+    // Prepare chapter data
+    const chapterData = {
+      pdfPath: publicUrl,
+      wordCount: wordCount,
+      updatedAt: serverTimestamp(),
+      chapterTitle: currentChapterData.title || 'New Chapter',
+      chapterOrder: currentChapter.value + 1
+    };
+    
+    if (chapterDoc.exists()) {
+      // Update existing chapter document
+      console.log('Updating existing chapter document:', currentChapterId);
+      await updateDoc(chapterRef, {
+        ...chapterData,
+        version: (chapterDoc.data().version || 0) + 1
+      });
+    } else {
+      // Create new chapter document
+      console.log('Creating new chapter document:', currentChapterId);
+      await createChapter(journalId, currentChapterId, {
+        ...chapterData,
+        version: 1
+      });
+      
+      // Update the journal's chapterPages array
+      await updateJournalChapters(journalId, currentChapterId);
+    }
     
     // Reset the content modified flag since we just saved
     contentModified.value = false;
@@ -448,6 +582,7 @@ const chapters = ref([
   { id: 'chapter-1', title: 'Chapter 1' }
 ]);
 const currentChapter = ref(0);
+const isLoadingChapters = ref(false);
 
 // Flag to track if content has been modified since last save
 const contentModified = ref(false);
@@ -516,19 +651,74 @@ const loadChapterContent = async (chapterIndex) => {
       pages.value = JSON.parse(JSON.stringify(chapterPagesMap.value[chapterId]));
       console.log(`Loaded ${pages.value.length} pages from local cache for chapter ${chapterId}`);
     } else {
-      // Initialize with empty content for new chapters
-      pages.value = [
-        {
-          id: Date.now(),
-          type: 'chapter',
-          title: chapters.value[chapterIndex].title,
-          content: ''
+      // Get the current user ID from Firebase Auth
+      if (!user.value || !user.value.uid) {
+        throw new Error('User not authenticated. Please log in to load chapters.');
+      }
+      const userId = user.value.uid;
+      
+      // Get the journal ID from the user's account data
+      const accountData = await getAccount(userId);
+      if (!accountData || !accountData.journalId) {
+        throw new Error('Could not retrieve journal ID from your account. Please refresh the page and try again.');
+      }
+      const journalId = accountData.journalId;
+      
+      // Try to fetch chapter content from Firestore
+      const chapterRef = doc(db, `journals/${journalId}/chapters/${chapterId}`);
+      const chapterDoc = await getDoc(chapterRef);
+      
+      if (chapterDoc.exists() && chapterDoc.data().pdfPath) {
+        // Chapter exists in Firestore and has a PDF path
+        const chapterData = chapterDoc.data();
+        console.log('Found chapter in Firestore with PDF path:', chapterData.pdfPath);
+        
+        try {
+          // Fetch PDF content and convert to text
+          const { title, content } = await fetchPdfAsText(chapterData.pdfPath);
+          console.log('Successfully extracted text from PDF:', { title, contentLength: content.length });
+          
+          // Convert text to HTML for the editor
+          const htmlContent = convertPdfTextToHtml(title, content);
+          
+          // Create page with the content
+          pages.value = [
+            {
+              id: Date.now(),
+              type: 'chapter',
+              title: chapterData.chapterTitle || title || chapters.value[chapterIndex].title,
+              content: htmlContent
+            }
+          ];
+          
+          console.log('Converted PDF content to HTML for editor');
+        } catch (pdfError) {
+          console.error('Error loading PDF content:', pdfError);
+          // Fall back to empty content if PDF loading fails
+          pages.value = [
+            {
+              id: Date.now(),
+              type: 'chapter',
+              title: chapters.value[chapterIndex].title,
+              content: `<p>Error loading chapter content: ${pdfError.message}</p>`
+            }
+          ];
         }
-      ];
+      } else {
+        // Initialize with empty content for new chapters
+        pages.value = [
+          {
+            id: Date.now(),
+            type: 'chapter',
+            title: chapters.value[chapterIndex].title,
+            content: ''
+          }
+        ];
+        console.log(`Initialized new content for chapter ${chapterId}`);
+      }
       
       // Store in the chapter pages map
       chapterPagesMap.value[chapterId] = JSON.parse(JSON.stringify(pages.value));
-      console.log(`Initialized new content for chapter ${chapterId}`);
     }
     
     // Reset page references and double page index
@@ -561,48 +751,107 @@ const createNewChapter = async () => {
     }
   }
   
-  const chapterNumber = chapters.value.length + 1;
-  const newChapterId = `chapter-${chapterNumber}`;
-  const newChapter = {
-    id: newChapterId,
-    title: `Chapter ${chapterNumber}`
-  };
-  
-  // Add the new chapter to the chapters array
-  chapters.value.push(newChapter);
-  
-  // Initialize empty pages for the new chapter
-  chapterPagesMap.value[newChapterId] = [
-    {
-      id: Date.now(),
-      type: 'chapter',
-      title: newChapter.title,
-      content: ''
+  try {
+    // Get the current user ID from Firebase Auth
+    if (!user.value || !user.value.uid) {
+      throw new Error('User not authenticated. Please log in to create chapters.');
     }
-  ];
-  
-  // Switch to the new chapter
-  await selectChapter(chapters.value.length - 1);
+    const userId = user.value.uid;
+    
+    // Get the journal ID from the user's account data
+    const accountData = await getAccount(userId);
+    if (!accountData || !accountData.journalId) {
+      throw new Error('Could not retrieve journal ID from your account. Please refresh the page and try again.');
+    }
+    const journalId = accountData.journalId;
+    
+    const chapterNumber = chapters.value.length + 1;
+    const newChapterId = `chapter-${Date.now()}`; // Use timestamp for unique ID
+    const newChapter = {
+      id: newChapterId,
+      title: `Chapter ${chapterNumber}`,
+      chapterOrder: chapterNumber
+    };
+    
+    // Add the new chapter to the chapters array
+    chapters.value.push(newChapter);
+    
+    // Initialize empty pages for the new chapter
+    chapterPagesMap.value[newChapterId] = [
+      {
+        id: Date.now(),
+        type: 'chapter',
+        title: newChapter.title,
+        content: ''
+      }
+    ];
+    
+    // Create the chapter document in Firestore
+    await createChapter(journalId, newChapterId, {
+      chapterTitle: newChapter.title,
+      chapterOrder: chapterNumber,
+      wordCount: 0,
+      pdfPath: ''
+    });
+    
+    // Update the journal's chapterPages array
+    await updateJournalChapters(journalId, newChapterId);
+    
+    console.log('New chapter created in Firestore:', newChapterId);
+    
+    // Switch to the new chapter
+    await selectChapter(chapters.value.length - 1);
+  } catch (error) {
+    console.error('Error creating new chapter:', error);
+    alert(`Error creating new chapter: ${error.message}`);
+  }
 };
 
 const deleteChapter = async (index) => {
   if (index === 0) return; // Prevent deleting first chapter
   
-  const chapterId = chapters.value[index].id;
-  
-  // Remove the chapter from the chapters array
-  chapters.value.splice(index, 1);
-  
-  // Remove the chapter's pages from the map
-  delete chapterPagesMap.value[chapterId];
-  
-  // If we're deleting the current chapter, switch to another one
-  if (currentChapter.value === index) {
-    const newIndex = Math.max(0, index - 1);
-    await selectChapter(newIndex);
-  } else if (currentChapter.value > index) {
-    // Adjust current chapter index if we deleted a chapter before the current one
-    currentChapter.value = currentChapter.value - 1;
+  try {
+    const chapterId = chapters.value[index].id;
+    
+    // Get the current user ID from Firebase Auth
+    if (!user.value || !user.value.uid) {
+      throw new Error('User not authenticated. Please log in to delete chapters.');
+    }
+    const userId = user.value.uid;
+    
+    // Get the journal ID from the user's account data
+    const accountData = await getAccount(userId);
+    if (!accountData || !accountData.journalId) {
+      throw new Error('Could not retrieve journal ID from your account. Please refresh the page and try again.');
+    }
+    const journalId = accountData.journalId;
+    
+    // Mark the chapter as deleted in Firestore (soft delete)
+    const chapterRef = doc(db, `journals/${journalId}/chapters/${chapterId}`);
+    await updateDoc(chapterRef, {
+      isDeleted: true,
+      updatedAt: serverTimestamp()
+    });
+    
+    console.log('Chapter marked as deleted in Firestore:', chapterId);
+    
+    // Remove the chapter from the chapters array
+    chapters.value.splice(index, 1);
+    
+    // Remove the chapter's pages from the map
+    delete chapterPagesMap.value[chapterId];
+    
+    // If we're deleting the current chapter, switch to another one
+    if (currentChapter.value === index) {
+      const newIndex = Math.max(0, index - 1);
+      await selectChapter(newIndex);
+    } else if (currentChapter.value > index) {
+      // Adjust current chapter index if we deleted a chapter before the current one
+      currentChapter.value = currentChapter.value - 1;
+    }
+  } catch (error) {
+    console.error('Error deleting chapter:', error);
+    alert(`Error deleting chapter: ${error.message}`);
   }
 };
 

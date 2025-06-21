@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import pdfjs from './pdfjs-worker';
 import { uploadFile } from './supabase';
 
 /**
@@ -264,5 +265,116 @@ export async function saveChapterAsTextPdf(contentElement, { chapterId, userId, 
   } catch (error) {
     console.error('Error in saveChapterAsTextPdf:', error);
     throw new Error(`Failed to save chapter as PDF: ${error.message}`);
+  }
+}
+
+/**
+ * Fetch a PDF from a URL and extract its text content
+ * @param {string} pdfUrl - URL of the PDF to fetch
+ * @returns {Promise<{title: string, content: string}>} - The extracted title and content
+ */
+export async function fetchPdfAsText(pdfUrl) {
+  try {
+    console.log('Fetching PDF from URL:', pdfUrl);
+    
+    // Fetch the PDF file
+    const response = await fetch(pdfUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+    }
+    
+    const pdfData = await response.arrayBuffer();
+    console.log('PDF fetched successfully, size:', pdfData.byteLength, 'bytes');
+    
+    // Load the PDF using pdf.js
+    const loadingTask = pdfjs.getDocument({ data: pdfData });
+    const pdf = await loadingTask.promise;
+    console.log('PDF loaded successfully, pages:', pdf.numPages);
+    
+    // Extract text from each page
+    let title = '';
+    let content = '';
+    let isFirstTextItem = true;
+    
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      
+      // Process text items
+      for (const item of textContent.items) {
+        // Skip empty items
+        if (!item.str.trim()) continue;
+        
+        // First text item with substantial content is likely the title
+        if (isFirstTextItem && item.str.trim().length > 3) {
+          title = item.str.trim();
+          isFirstTextItem = false;
+          continue;
+        }
+        
+        // Add to content with proper spacing
+        if (content && !content.endsWith('\n')) {
+          content += ' ';
+        }
+        content += item.str;
+        
+        // Add newlines for paragraph breaks (detected by font changes or height differences)
+        if (item.hasEOL) {
+          content += '\n';
+        }
+      }
+      
+      // Add page break
+      if (i < pdf.numPages) {
+        content += '\n\n';
+      }
+    }
+    
+    return { title, content: content.trim() };
+    
+  } catch (error) {
+    console.error('Error extracting text from PDF:', error);
+    throw new Error(`Failed to extract text from PDF: ${error.message}`);
+  }
+}
+
+/**
+ * Convert PDF text content to HTML format for the editor
+ * @param {string} title - The title of the chapter
+ * @param {string} content - The text content of the chapter
+ * @returns {string} - HTML formatted content for the editor
+ */
+export function convertPdfTextToHtml(title, content) {
+  try {
+    // Create HTML structure
+    let html = '';
+    
+    // Add title as heading if available
+    if (title && title.trim()) {
+      html += `<h1 class="chapter-title">${title.trim()}</h1>\n`;
+    }
+    
+    // Process content paragraphs
+    const paragraphs = content.split(/\n{2,}/);
+    for (const paragraph of paragraphs) {
+      if (!paragraph.trim()) continue;
+      
+      // Check if this looks like a heading (short line that doesn't end with punctuation)
+      const isHeading = paragraph.trim().length < 50 && 
+                      !paragraph.trim().match(/[.,:;!?]$/) && 
+                      paragraph.trim() === paragraph.trim().charAt(0).toUpperCase() + paragraph.trim().slice(1);
+      
+      if (isHeading) {
+        html += `<h2>${paragraph.trim()}</h2>\n`;
+      } else {
+        html += `<p>${paragraph.trim()}</p>\n`;
+      }
+    }
+    
+    return html;
+    
+  } catch (error) {
+    console.error('Error converting PDF text to HTML:', error);
+    return `<p>Error converting content: ${error.message}</p>`;
   }
 }

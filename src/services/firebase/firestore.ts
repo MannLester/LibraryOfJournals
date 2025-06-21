@@ -6,7 +6,9 @@ import {
   setDoc, 
   query, 
   where, 
-  serverTimestamp 
+  serverTimestamp,
+  updateDoc,
+  arrayUnion
 } from 'firebase/firestore';
 import type { User } from 'firebase/auth';
 import { db } from './config';
@@ -196,6 +198,112 @@ export const getUserJournals = async (userId: string): Promise<JournalData[]> =>
     return journals;
   } catch (error) {
     console.error('Error getting user journals:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new chapter document in Firestore
+ * @param journalId Journal ID that the chapter belongs to
+ * @param chapterId Chapter ID (can be generated or provided)
+ * @param chapterData Chapter data to save
+ * @returns Promise with the created chapter data
+ */
+export const createChapter = async (
+  journalId: string,
+  chapterId: string,
+  chapterData: Partial<ChapterData>
+): Promise<ChapterData> => {
+  try {
+    console.log('Creating chapter document:', { journalId, chapterId });
+    
+    // Get the chapters collection for this journal
+    const chaptersCollection = getChaptersCollection(journalId);
+    
+    // Create a new document reference with the provided ID
+    const chapterRef = doc(chaptersCollection, chapterId);
+    
+    // Prepare the complete chapter data
+    const completeChapterData: ChapterData = {
+      id: chapterId,
+      journalId: journalId,
+      chapterTitle: chapterData.chapterTitle || 'New Chapter',
+      chapterOrder: chapterData.chapterOrder || 1,
+      pdfPath: chapterData.pdfPath || '',
+      wordCount: chapterData.wordCount || 0,
+      updatedAt: serverTimestamp(),
+      version: 1,
+      isDeleted: false
+    };
+    
+    // Save to Firestore
+    await setDoc(chapterRef, completeChapterData);
+    console.log('Chapter created with ID:', chapterId);
+    
+    return completeChapterData;
+  } catch (error) {
+    console.error('Error creating chapter:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a journal's chapterPages array to include a chapter ID
+ * @param journalId Journal ID to update
+ * @param chapterId Chapter ID to add to the journal
+ * @returns Promise that resolves when the update is complete
+ */
+export const updateJournalChapters = async (
+  journalId: string,
+  chapterId: string
+): Promise<void> => {
+  try {
+    console.log('Updating journal chapters array:', { journalId, chapterId });
+    
+    // Get reference to the journal document
+    const journalRef = doc(journalsCollection, journalId);
+    
+    // Update the journal document to add the chapter ID to the chapterPages array
+    await updateDoc(journalRef, {
+      chapterPages: arrayUnion(chapterId),
+      updatedAt: serverTimestamp()
+    });
+    
+    console.log('Journal updated with new chapter ID');
+  } catch (error) {
+    console.error('Error updating journal chapters:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all chapters for a journal
+ * @param journalId Journal ID to get chapters for
+ * @returns Promise with array of chapter data
+ */
+export const getJournalChapters = async (journalId: string): Promise<ChapterData[]> => {
+  try {
+    console.log('Getting chapters for journal:', journalId);
+    
+    // Get the chapters collection for this journal
+    const chaptersCollection = getChaptersCollection(journalId);
+    
+    // Query for non-deleted chapters
+    const chaptersQuery = query(chaptersCollection, where('isDeleted', '==', false));
+    const chaptersSnapshot = await getDocs(chaptersQuery);
+    
+    const chapters: ChapterData[] = [];
+    chaptersSnapshot.forEach((doc) => {
+      chapters.push({ ...doc.data(), id: doc.id } as ChapterData);
+    });
+    
+    // Sort chapters by chapterOrder
+    chapters.sort((a, b) => (a.chapterOrder || 0) - (b.chapterOrder || 0));
+    
+    console.log(`Found ${chapters.length} chapters for journal ${journalId}`);
+    return chapters;
+  } catch (error) {
+    console.error('Error getting journal chapters:', error);
     throw error;
   }
 };
