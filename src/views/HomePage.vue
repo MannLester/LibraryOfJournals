@@ -486,8 +486,10 @@ function switchTab(tab) {
 }
 
 function navigateToWrite() {
+  console.log('🚀 navigateToWrite called, dispatching showPage event');
   const event = new CustomEvent('showPage', { detail: { page: 'writing' } });
   window.dispatchEvent(event);
+  console.log('✅ showPage event dispatched with page: writing');
 }
 
 function navigateToExplore() {

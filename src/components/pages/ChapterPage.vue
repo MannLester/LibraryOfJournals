@@ -3,6 +3,15 @@
     'double-page-left': isDoublePageLeft, 
     'double-page-right': isDoublePageRight 
   }" ref="pageElement">
+    <!-- Debug info -->
+    <div v-if="debugMode" class="debug-info">
+      <p>Chapter Page ID: {{ page.id }}</p>
+      <p>Title: {{ page.title || 'No title' }}</p>
+      <p>Content length: {{ page.content ? page.content.length : 0 }}</p>
+      <p>Content preview: {{ page.content ? page.content.substring(0, 50) + '...' : 'No content' }}</p>
+    </div>
+    
+    <!-- Title element -->
     <div 
       class="page-title" 
       ref="titleElement"
@@ -15,7 +24,14 @@
         paddingRight: isDoublePageRight ? '12vh' : '8vh'
       }"
     ></div>
+    
+    <!-- Fallback static content for PDF content -->
+    <div v-if="pdfContentDetected" class="static-content" v-html="page.content">
+    </div>
+    
+    <!-- Regular editable content -->
     <div 
+      v-else
       class="page-content" 
       ref="contentElement"
       contenteditable="true"
@@ -32,7 +48,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue';
+import { ref, onMounted, nextTick, watch, computed } from 'vue';
 
 const props = defineProps({
   page: {
@@ -54,7 +70,19 @@ const props = defineProps({
   isInDoublePageMode: {
     type: Boolean,
     default: false
+  },
+  debugMode: {
+    type: Boolean,
+    default: true // Enable debug mode by default for troubleshooting
   }
+});
+
+// Computed property to detect if this is PDF content
+const pdfContentDetected = computed(() => {
+  if (!props.page.content) return false;
+  // Check for our test marker
+  return props.page.content.includes('TRY LANG IF NAGAWNA PA REN') || 
+         props.page.content.includes('pdf-test-content');
 });
 
 const emit = defineEmits([
@@ -571,6 +599,48 @@ defineExpose({
   overflow-wrap: break-word;
   max-height: calc(127.26vh - 6vh - 6vh - 3.5rem - 3vh);
   padding: 0 8vh; /* Default horizontal padding */
+}
+
+/* Debug info styles */
+.debug-info {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: rgba(255, 255, 0, 0.2);
+  padding: 10px;
+  font-size: 12px;
+  z-index: 100;
+  max-width: 100%;
+  overflow: hidden;
+  border-bottom: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+}
+
+/* Static content styles */
+.static-content {
+  font-size: clamp(1.6rem, 1.2vw, 1.6rem);
+  line-height: 1.8;
+  color: #333;
+  margin: 0;
+  text-align: justify;
+  font-weight: 400;
+  min-height: 3rem;
+  font-family: 'Caveat', cursive;
+  overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-height: calc(127.26vh - 6vh - 6vh - 3.5rem - 3vh);
+  padding: 0 8vh; /* Default horizontal padding */
+}
+
+.static-content h2 {
+  font-size: 2rem;
+  margin-bottom: 2vh;
+  font-weight: bold;
+}
+
+.static-content p {
+  margin-bottom: 1.5vh;
 }
 
 /* Better placeholder handling for both title and content */

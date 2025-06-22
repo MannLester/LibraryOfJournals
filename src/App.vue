@@ -18,10 +18,60 @@ const currentPage = ref('home');
 
 // Listen for navigation events from the Header component
 onMounted(() => {
-  window.addEventListener('showPage', (event: Event) => {
+  console.log('🌐 App.vue: Setting up global showPage event listener');
+  
+  window.addEventListener('showPage', async (event: Event) => {
     const { page } = (event as CustomEvent).detail;
+    console.log(`🌐 App.vue: showPage event received with page: ${page}`);
+    
+    // For WritingPage, ensure user is authenticated first
+    if (page === 'writing') {
+      console.log(`🌐 App.vue: Navigation to WritingPage requested, checking auth state`);
+      
+      // If still loading auth state, wait for it
+      if (isLoading.value) {
+        console.log(`🌐 App.vue: Auth state is still loading, waiting...`);
+        let waitTime = 0;
+        const maxWaitTime = 3000; // 3 seconds max
+        
+        while (isLoading.value && waitTime < maxWaitTime) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          waitTime += 100;
+        }
+        
+        console.log(`🌐 App.vue: Done waiting for auth, isAuthenticated: ${isAuthenticated.value}`);
+      }
+      
+      // Now check if authenticated
+      if (!isAuthenticated.value) {
+        console.warn(`🌐 App.vue: User not authenticated for WritingPage, redirecting to home`);
+        currentPage.value = 'home';
+        alert('Please log in to access your writing.');
+        return;
+      }
+      
+      console.log(`🌐 App.vue: User authenticated, proceeding to WritingPage`);
+    }
+    
+    // Update current page
     currentPage.value = page;
+    console.log(`🌐 App.vue: currentPage updated to: ${currentPage.value}`);
+    
+    // Dispatch a secondary event to notify components that the page has changed
+    console.log(`🌐 App.vue: Dispatching pageChanged event for ${page}`);
+    const pageChangedEvent = new CustomEvent('pageChanged', { detail: { page, isAuthenticated: isAuthenticated.value } });
+    window.dispatchEvent(pageChangedEvent);
   });
+  
+  // Test the event system
+  console.log('🌐 App.vue: Testing event system with manual dispatch');
+  setTimeout(() => {
+    const testEvent = new CustomEvent('test-app-event', { detail: { test: true } });
+    window.addEventListener('test-app-event', (e) => {
+      console.log('🌐 App.vue: Test event received:', (e as CustomEvent).detail);
+    });
+    window.dispatchEvent(testEvent);
+  }, 1000);
 });
 
 const contentAreaStyle = computed(() => {

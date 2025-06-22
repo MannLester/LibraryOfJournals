@@ -316,7 +316,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import useAuth from '../composables/useAuth';
 import ChapterPage from '../components/pages/ChapterPage.vue';
 import NormalPage from '../components/pages/NormalPage.vue';
@@ -358,25 +358,127 @@ const isPresentMode = ref(false);
 const currentDoublePageIndex = ref(0);
 // Page turning state removed
 
+// Handle showPage events for navigation
+const handleShowPageEvent = async (event) => {
+  console.log('🔍 ShowPage event received in WritingPage:', event.detail);
+  const { page } = event.detail;
+  
+  // If navigating to the writing page, load chapters
+  if (page === 'writing') {
+    console.log('🚀 Navigation to writing page detected, loading chapters...');
+    await loadChaptersAfterNavigation();
+  }
+};
+
+// Handle pageChanged events (backup for navigation)
+const handlePageChangedEvent = async (event) => {
+  console.log('🔄 PageChanged event received in WritingPage:', event.detail);
+  const { page } = event.detail;
+  
+  // If navigating to the writing page, load chapters
+  if (page === 'writing') {
+    console.log('🔄 🚀 Navigation to writing page detected via pageChanged, loading chapters...');
+    await loadChaptersAfterNavigation();
+  }
+};
+
+// Common function to load chapters after navigation
+const loadChaptersAfterNavigation = async () => {
+  try {
+    console.log('🔄 Starting loadChaptersAfterNavigation');
+    
+    // Wait for authentication to be ready with retries
+    let retries = 0;
+    const maxRetries = 5;
+    const retryDelay = 500; // 500ms
+    
+    while ((!user.value || !user.value.uid) && retries < maxRetries) {
+      console.log(`⏳ Waiting for authentication... (attempt ${retries + 1}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+      retries++;
+    }
+    
+    if (!user.value || !user.value.uid) {
+      console.warn('⚠️ User still not authenticated after retries, skipping chapter loading');
+      return;
+    }
+    
+    console.log('👤 User authenticated:', user.value.uid);
+    console.log('📚 Starting to load chapters from Firestore...');
+    await loadChaptersFromFirestore();
+    console.log('✅ Chapters loaded successfully after navigation');
+  } catch (error) {
+    console.error('❌ Error loading chapters on navigation:', error);
+  }
+};
+
 // Load chapters from Firestore when component is mounted
 onMounted(async () => {
+  console.log('💬 📢 WritingPage mounted, adding event listeners');
+  
+  // Test event listener by dispatching a test event
+  console.log('💬 🚨 Testing event listener with a manual event dispatch');
+  const testEvent = new CustomEvent('test-event', { detail: { test: true } });
+  window.addEventListener('test-event', (e) => {
+    console.log('💬 ✅ Test event listener working:', e.detail);
+  });
+  window.dispatchEvent(testEvent);
+  
+  // Add the showPage event listener
+  window.addEventListener('showPage', handleShowPageEvent);
+  console.log('💬 🔔 Added showPage event listener');
+  
+  // Add the pageChanged event listener (backup for navigation)
+  window.addEventListener('pageChanged', handlePageChangedEvent);
+  console.log('💬 🔄 Added pageChanged event listener as backup');
+  
+  // Check if we're already on the writing page (in case component mounted after navigation)
+  console.log('💬 🔍 Checking if already on writing page');
+  const appComponent = document.querySelector('#app')?.__vue_app__;
+  if (appComponent) {
+    const appInstance = appComponent._instance;
+    if (appInstance && appInstance.setupState && appInstance.setupState.currentPage === 'writing') {
+      console.log('💬 🌟 Already on writing page, triggering chapter load');
+      await loadChaptersAfterNavigation();
+    }
+  }
+  
+  // Manually trigger a showPage event to test if the handler works
+  console.log('💬 🚨 Testing showPage event handler with manual dispatch');
+  const testShowPageEvent = new CustomEvent('showPage', { detail: { page: 'writing' } });
+  window.dispatchEvent(testShowPageEvent);
+  
   try {
     if (!user.value || !user.value.uid) {
-      console.warn('User not authenticated, skipping chapter loading');
+      console.warn('💬 ⚠️ User not authenticated, skipping chapter loading');
       return;
     }
     
     // Initial load of chapters when component mounts
+    console.log('💬 📖 Initial load of chapters on component mount');
     await loadChaptersFromFirestore();
   } catch (error) {
-    console.error('Error loading chapters on mount:', error);
+    console.error('💬 ❌ Error loading chapters on mount:', error);
   }
+});
+
+// Clean up event listeners when component is unmounted
+onUnmounted(() => {
+  console.log('💬 🔄 WritingPage unmounted, removing all event listeners');
+  window.removeEventListener('showPage', handleShowPageEvent);
+  window.removeEventListener('pageChanged', handlePageChangedEvent);
+  window.removeEventListener('test-event', () => {}); // Clean up test event listener
+  console.log('💬 ✅ All event listeners removed');
 });
 
 // Load chapters from Firestore
 const loadChaptersFromFirestore = async () => {
-  if (isLoadingChapters.value) return;
+  if (isLoadingChapters.value) {
+    console.log('⏳ Already loading chapters, skipping duplicate request');
+    return;
+  }
   
+  console.log('🔄 Starting to load chapters from Firestore...');
   isLoadingChapters.value = true;
   
   try {
@@ -385,16 +487,21 @@ const loadChaptersFromFirestore = async () => {
       throw new Error('User not authenticated. Please log in to load chapters.');
     }
     const userId = user.value.uid;
+    console.log('👤 User ID:', userId);
     
     // Get the journal ID from the user's account data
+    console.log('📝 Fetching account data to get journal ID...');
     const accountData = await getAccount(userId);
     if (!accountData || !accountData.journalId) {
       throw new Error('Could not retrieve journal ID from your account. Please refresh the page and try again.');
     }
     const journalId = accountData.journalId;
+    console.log('📔 Journal ID:', journalId);
     
     // Get chapters from Firestore
+    console.log('🔍 Fetching chapters from Firestore...');
     const firestoreChapters = await getJournalChapters(journalId);
+    console.log('📚 Firestore chapters data:', firestoreChapters);
     
     if (firestoreChapters.length > 0) {
       // Map Firestore chapters to our local format
@@ -402,30 +509,35 @@ const loadChaptersFromFirestore = async () => {
         id: chapter.id,
         title: chapter.chapterTitle,
         chapterOrder: chapter.chapterOrder,
-        version: chapter.version
+        version: chapter.version,
+        pdfPath: chapter.pdfPath // Make sure we capture the pdfPath
       }));
       
       // Update local chapters array
       chapters.value = mappedChapters;
-      console.log(`Loaded ${chapters.value.length} chapters from Firestore`);
+      console.log(`✅ Loaded ${chapters.value.length} chapters from Firestore:`, chapters.value);
       
       // Select the first chapter
       if (currentChapter.value >= chapters.value.length) {
         currentChapter.value = 0;
       }
+      console.log(`📖 Selected chapter index: ${currentChapter.value}`);
       
       // Load the current chapter content
+      console.log('📄 Loading content for selected chapter...');
       await loadChapterContent(currentChapter.value);
+      console.log('✅ Chapter content loaded successfully');
     } else if (chapters.value.length === 0) {
       // If no chapters in Firestore and no local chapters, create a default one
-      console.log('No chapters found, creating default chapter');
+      console.log('📝 No chapters found, creating default chapter');
       await createNewChapter();
     }
   } catch (error) {
-    console.error('Error loading chapters from Firestore:', error);
+    console.error('❌ Error loading chapters from Firestore:', error);
     alert(`Error loading chapters: ${error.message}`);
   } finally {
     isLoadingChapters.value = false;
+    console.log('🏁 Finished loading chapters process');
   }
 };
 
@@ -642,70 +754,186 @@ const saveCurrentChapterContent = async () => {
 // Load content for the selected chapter
 const loadChapterContent = async (chapterIndex) => {
   const chapterId = chapters.value[chapterIndex].id;
-  console.log(`Loading content for chapter: ${chapterId}`);
+  const chapterTitle = chapters.value[chapterIndex].title;
+  console.log(`📕 Loading content for chapter: ${chapterId} (${chapterTitle})`);
   
   try {
     // Check if we have content for this chapter in our local map
     if (chapterPagesMap.value[chapterId]) {
+      console.log(`💾 Found chapter content in local cache`);
       // Use the stored pages for this chapter
       pages.value = JSON.parse(JSON.stringify(chapterPagesMap.value[chapterId]));
-      console.log(`Loaded ${pages.value.length} pages from local cache for chapter ${chapterId}`);
+      console.log(`✅ Loaded ${pages.value.length} pages from local cache for chapter ${chapterId}`);
     } else {
+      console.log(`🔍 No local cache found, fetching from Firestore...`);
       // Get the current user ID from Firebase Auth
       if (!user.value || !user.value.uid) {
         throw new Error('User not authenticated. Please log in to load chapters.');
       }
       const userId = user.value.uid;
+      console.log(`👤 User ID for chapter content fetch: ${userId}`);
       
       // Get the journal ID from the user's account data
+      console.log(`📝 Fetching account data for chapter content...`);
       const accountData = await getAccount(userId);
       if (!accountData || !accountData.journalId) {
         throw new Error('Could not retrieve journal ID from your account. Please refresh the page and try again.');
       }
       const journalId = accountData.journalId;
+      console.log(`📔 Journal ID for chapter content: ${journalId}`);
       
       // Try to fetch chapter content from Firestore
+      console.log(`🔎 Fetching chapter document from Firestore: journals/${journalId}/chapters/${chapterId}`);
       const chapterRef = doc(db, `journals/${journalId}/chapters/${chapterId}`);
       const chapterDoc = await getDoc(chapterRef);
       
-      if (chapterDoc.exists() && chapterDoc.data().pdfPath) {
-        // Chapter exists in Firestore and has a PDF path
+      if (chapterDoc.exists()) {
+        console.log(`✅ Chapter document exists in Firestore`);
         const chapterData = chapterDoc.data();
-        console.log('Found chapter in Firestore with PDF path:', chapterData.pdfPath);
+        console.log(`📃 Chapter data:`, chapterData);
         
-        try {
-          // Fetch PDF content and convert to text
-          const { title, content } = await fetchPdfAsText(chapterData.pdfPath);
-          console.log('Successfully extracted text from PDF:', { title, contentLength: content.length });
+        if (chapterData.pdfPath) {
+          console.log(`📝 Found PDF path in chapter data: ${chapterData.pdfPath}`);
+          console.log(`📝 DOCUMENT ID: ${chapterId}`);
+          console.log(`📝 DOCUMENT PATH: journals/${journalId}/chapters/${chapterId}`);
           
-          // Convert text to HTML for the editor
-          const htmlContent = convertPdfTextToHtml(title, content);
-          
-          // Create page with the content
+          try {
+            // Fetch PDF content and convert to text
+            console.log(`💾 Starting to fetch PDF from URL...`);
+            console.log(`🔗 PDF URL: ${chapterData.pdfPath}`);
+            console.log(`🔗 FULL PDF URL: ${chapterData.pdfPath.startsWith('http') ? chapterData.pdfPath : 'Storage path, not HTTP URL'}`);
+            
+            const { title, content } = await fetchPdfAsText(chapterData.pdfPath);
+            console.log(`✅ Successfully extracted text from PDF:`, { 
+              title, 
+              contentPreview: content.substring(0, 100) + '...', 
+              contentLength: content.length 
+            });
+            
+            // Convert text to HTML for the editor
+            console.log(`📝 Converting PDF text to HTML...`);
+            const htmlContent = convertPdfTextToHtml(title, content);
+            console.log(`✅ Converted to HTML, length: ${htmlContent.length}`);
+            console.log(`🔍 HTML content preview: ${htmlContent.substring(0, 200)}...`);
+            
+            // Add a special test marker to the content
+            const testContent = `<div class="pdf-test-content">
+              <h2>PDF TEST CONTENT</h2>
+              <p>This is a test to verify PDF content display.</p>
+              <p>TRY LANG IF NAGAWNA PA REN</p>
+            </div>` + htmlContent;
+            
+            console.log(`🧪 Adding test marker to content`);
+            
+            // Create page with the content
+            pages.value = [
+              {
+                id: Date.now(),
+                type: 'chapter',
+                title: chapterData.chapterTitle || title || chapters.value[chapterIndex].title,
+                content: testContent
+              }
+            ];
+            
+            console.log(`📖 Created page with PDF content:`);
+            console.log(`   - Title: ${pages.value[0].title}`);
+            console.log(`   - Content length: ${pages.value[0].content.length}`);
+            console.log(`   - Content preview: ${pages.value[0].content.substring(0, 100)}...`);
+            
+            // Force refresh the editor content after a short delay
+            setTimeout(() => {
+              console.log(`🔄 Force refreshing editor content...`);
+              // Create a temporary copy of the content
+              const tempContent = pages.value[0].content;
+              console.log(`📝 Content to display:`, tempContent.substring(0, 200) + '...');
+              
+              // Clear and then restore the content to force a refresh
+              pages.value[0].content = '';
+              
+              // Use nextTick to ensure Vue has updated the DOM
+              nextTick(() => {
+                pages.value[0].content = tempContent;
+                console.log(`✅ Editor content refreshed with length: ${pages.value[0].content.length}`);
+                
+                // Add another timeout to directly manipulate the DOM if needed
+                setTimeout(() => {
+                  console.log('🔍 Looking for all possible editor elements...');
+                  
+                  // Try different selectors to find the content elements
+                  const pageContentElements = document.querySelectorAll('.page-content');
+                  const titleElements = document.querySelectorAll('.page-title');
+                  const staticContentElements = document.querySelectorAll('.static-content');
+                  
+                  console.log(`🔍 Found: ${pageContentElements.length} page-content, ${titleElements.length} page-title, ${staticContentElements.length} static-content elements`);
+                  
+                  // First try to update any page-content elements
+                  if (pageContentElements && pageContentElements.length > 0) {
+                    for (let i = 0; i < pageContentElements.length; i++) {
+                      const editor = pageContentElements[i];
+                      console.log(`⚠️ Setting content directly to page-content element ${i}...`);
+                      editor.innerHTML = tempContent;
+                      console.log(`✅ Directly set page-content ${i} content`);
+                    }
+                  }
+                  
+                  // If there's a static-content element, update it too
+                  if (staticContentElements && staticContentElements.length > 0) {
+                    for (let i = 0; i < staticContentElements.length; i++) {
+                      const staticElement = staticContentElements[i];
+                      console.log(`⚠️ Setting content directly to static-content element ${i}...`);
+                      staticElement.innerHTML = `<h2>PDF Content</h2>${tempContent}`;
+                      console.log(`✅ Directly set static-content ${i}`);
+                    }
+                  }
+                  
+                  // If no elements were found, log a warning
+                  if (pageContentElements.length === 0 && staticContentElements.length === 0) {
+                    console.warn(`⚠️ No editor elements found in DOM`);
+                  }
+                }, 300);
+              });
+            }, 500);
+            
+            // Debug: Check if the editor is updating with this content
+            setTimeout(() => {
+              console.log(`🔄 Checking editor content after timeout...`);
+              const editorElement = document.querySelector('.editor-content');
+              if (editorElement) {
+                console.log(`📄 Editor element found, content length: ${editorElement.innerHTML.length}`);
+                console.log(`📄 Editor content preview: ${editorElement.innerHTML.substring(0, 100)}...`);
+              } else {
+                console.warn(`⚠️ Editor element not found in DOM`);
+              }
+            }, 1000);
+          } catch (pdfError) {
+            console.error(`❌ Error loading PDF content:`, pdfError);
+            // Fall back to empty content if PDF loading fails
+            pages.value = [
+              {
+                id: Date.now(),
+                type: 'chapter',
+                title: chapters.value[chapterIndex].title,
+                content: `<p>Error loading chapter content: ${pdfError.message}</p>`
+              }
+            ];
+            console.log(`⚠️ Created fallback page due to PDF loading error`);
+          }
+        } else {
+          console.log(`⚠️ Chapter exists but has no PDF path`);
+          // Chapter exists but has no PDF path
           pages.value = [
             {
               id: Date.now(),
               type: 'chapter',
-              title: chapterData.chapterTitle || title || chapters.value[chapterIndex].title,
-              content: htmlContent
+              title: chapterData.chapterTitle || chapters.value[chapterIndex].title,
+              content: ''
             }
           ];
-          
-          console.log('Converted PDF content to HTML for editor');
-        } catch (pdfError) {
-          console.error('Error loading PDF content:', pdfError);
-          // Fall back to empty content if PDF loading fails
-          pages.value = [
-            {
-              id: Date.now(),
-              type: 'chapter',
-              title: chapters.value[chapterIndex].title,
-              content: `<p>Error loading chapter content: ${pdfError.message}</p>`
-            }
-          ];
+          console.log(`📖 Created empty page for chapter without PDF`);
         }
       } else {
         // Initialize with empty content for new chapters
+        console.log(`⚠️ Chapter document not found in Firestore, creating new content`);
         pages.value = [
           {
             id: Date.now(),
@@ -714,10 +942,11 @@ const loadChapterContent = async (chapterIndex) => {
             content: ''
           }
         ];
-        console.log(`Initialized new content for chapter ${chapterId}`);
+        console.log(`📖 Initialized new empty content for chapter ${chapterId}`);
       }
       
       // Store in the chapter pages map
+      console.log(`💾 Storing chapter content in local cache`);
       chapterPagesMap.value[chapterId] = JSON.parse(JSON.stringify(pages.value));
     }
     

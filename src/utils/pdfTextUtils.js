@@ -275,65 +275,126 @@ export async function saveChapterAsTextPdf(contentElement, { chapterId, userId, 
  */
 export async function fetchPdfAsText(pdfUrl) {
   try {
-    console.log('Fetching PDF from URL:', pdfUrl);
+    console.log('🔍 Fetching PDF from URL:', pdfUrl);
     
     // Fetch the PDF file
     const response = await fetch(pdfUrl);
     if (!response.ok) {
+      console.error('❌ Failed to fetch PDF:', response.statusText);
       throw new Error(`Failed to fetch PDF: ${response.statusText}`);
     }
     
     const pdfData = await response.arrayBuffer();
-    console.log('PDF fetched successfully, size:', pdfData.byteLength, 'bytes');
+    console.log('✅ PDF fetched successfully, size:', pdfData.byteLength, 'bytes');
+    
+    // Check if the PDF data is valid
+    if (pdfData.byteLength < 100) {
+      console.error('❌ WARNING: PDF data is suspiciously small:', pdfData.byteLength, 'bytes');
+    }
     
     // Load the PDF using pdf.js
     const loadingTask = pdfjs.getDocument({ data: pdfData });
     const pdf = await loadingTask.promise;
-    console.log('PDF loaded successfully, pages:', pdf.numPages);
+    console.log('📝 PDF loaded successfully, pages:', pdf.numPages);
+    
+    // Log more details about the PDF
+    console.log('📝 PDF fingerprint:', pdf.fingerprint);
+    console.log('📝 PDF version:', pdf._pdfInfo.version);
     
     // Extract text from each page
     let title = '';
     let content = '';
     let isFirstTextItem = true;
+    let allTextItems = [];
     
+    // First pass: collect all text items with their positions and styles
     for (let i = 1; i <= pdf.numPages; i++) {
+      console.log(`📃 Processing page ${i} of ${pdf.numPages}`);
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       
-      // Process text items
+      // Store all items with their properties
       for (const item of textContent.items) {
-        // Skip empty items
         if (!item.str.trim()) continue;
         
-        // First text item with substantial content is likely the title
-        if (isFirstTextItem && item.str.trim().length > 3) {
-          title = item.str.trim();
-          isFirstTextItem = false;
-          continue;
-        }
-        
-        // Add to content with proper spacing
-        if (content && !content.endsWith('\n')) {
-          content += ' ';
-        }
-        content += item.str;
-        
-        // Add newlines for paragraph breaks (detected by font changes or height differences)
-        if (item.hasEOL) {
-          content += '\n';
-        }
-      }
-      
-      // Add page break
-      if (i < pdf.numPages) {
-        content += '\n\n';
+        allTextItems.push({
+          text: item.str,
+          page: i,
+          x: item.transform[4], // x position
+          y: item.transform[5], // y position
+          height: item.height,
+          width: item.width,
+          fontName: item.fontName,
+          hasEOL: item.hasEOL
+        });
       }
     }
+    
+    console.log(`📊 Collected ${allTextItems.length} text items from PDF`);
+    
+    // Sort items by page, then by y position (top to bottom), then by x position (left to right)
+    allTextItems.sort((a, b) => {
+      if (a.page !== b.page) return a.page - b.page;
+      if (Math.abs(a.y - b.y) > 5) return b.y - a.y; // Reverse y-axis sorting (PDF coordinates)
+      return a.x - b.x;
+    });
+    
+    // Find the title (usually first item with distinct properties)
+    if (allTextItems.length > 0) {
+      title = allTextItems[0].text.trim();
+      console.log('📑 Extracted title:', title);
+    }
+    
+    // Process remaining items into content
+    let currentY = null;
+    let currentLine = '';
+    
+    for (let i = 1; i < allTextItems.length; i++) { // Start from 1 to skip title
+      const item = allTextItems[i];
+      
+      // Check if this is a new line
+      if (currentY === null || Math.abs(item.y - currentY) > 5) {
+        // Add previous line to content if it exists
+        if (currentLine) {
+          content += currentLine + '\n';
+          currentLine = '';
+        }
+        
+        // Add extra line break for paragraph separation
+        if (currentY !== null && Math.abs(item.y - currentY) > 15) {
+          content += '\n';
+        }
+        
+        currentY = item.y;
+      }
+      
+      // Add space between words on same line
+      if (currentLine && !currentLine.endsWith(' ')) {
+        currentLine += ' ';
+      }
+      
+      currentLine += item.text;
+      
+      // Force line break if item has EOL
+      if (item.hasEOL) {
+        content += currentLine + '\n';
+        currentLine = '';
+        currentY = null;
+      }
+    }
+    
+    // Add any remaining line
+    if (currentLine) {
+      content += currentLine;
+    }
+    
+    console.log('📝 Extracted content length:', content.length);
+    console.log('📝 Content preview:', content.substring(0, 200) + '...');
     
     return { title, content: content.trim() };
     
   } catch (error) {
-    console.error('Error extracting text from PDF:', error);
+    console.error('❌ Error extracting text from PDF:', error);
     throw new Error(`Failed to extract text from PDF: ${error.message}`);
   }
 }
@@ -346,35 +407,91 @@ export async function fetchPdfAsText(pdfUrl) {
  */
 export function convertPdfTextToHtml(title, content) {
   try {
+    console.log('📝 Starting PDF to HTML conversion');
+    console.log('📑 Title to convert:', title);
+    console.log('📝 Content length:', content.length);
+    
     // Create HTML structure
     let html = '';
     
-    // Add title as heading if available
+    // Add title as heading if available - but we'll skip this since the title is already shown in the chapter sidebar
+    // We'll add it as a comment for debugging purposes
     if (title && title.trim()) {
-      html += `<h1 class="chapter-title">${title.trim()}</h1>\n`;
+      html += `<!-- Title: ${title.trim()} -->\n`;
+      // We're not adding the title as an H1 since it's already shown in the UI
+      // html += `<h1 class="chapter-title">${title.trim()}</h1>\n`;
     }
     
-    // Process content paragraphs
-    const paragraphs = content.split(/\n{2,}/);
-    for (const paragraph of paragraphs) {
-      if (!paragraph.trim()) continue;
+    // Process content paragraphs with improved detection
+    const lines = content.split('\n');
+    let currentParagraph = '';
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
       
-      // Check if this looks like a heading (short line that doesn't end with punctuation)
-      const isHeading = paragraph.trim().length < 50 && 
-                      !paragraph.trim().match(/[.,:;!?]$/) && 
-                      paragraph.trim() === paragraph.trim().charAt(0).toUpperCase() + paragraph.trim().slice(1);
+      // Skip empty lines
+      if (!line) {
+        // If we have accumulated paragraph text, add it as a paragraph
+        if (currentParagraph) {
+          // Check if this looks like a heading
+          const isHeading = currentParagraph.length < 50 && 
+                          !currentParagraph.match(/[.,:;!?]$/) && 
+                          currentParagraph === currentParagraph.charAt(0).toUpperCase() + currentParagraph.slice(1);
+          
+          if (isHeading && currentParagraph.toUpperCase() !== title.toUpperCase()) {
+            html += `<h2>${currentParagraph}</h2>\n`;
+          } else if (currentParagraph.toUpperCase() === title.toUpperCase()) {
+            // Skip if it's the same as the title
+            html += `<!-- Skipping duplicate title: ${currentParagraph} -->\n`;
+          } else {
+            html += `<p>${currentParagraph}</p>\n`;
+          }
+          
+          currentParagraph = '';
+        }
+        continue;
+      }
       
-      if (isHeading) {
-        html += `<h2>${paragraph.trim()}</h2>\n`;
-      } else {
-        html += `<p>${paragraph.trim()}</p>\n`;
+      // Check if this line is a standalone heading
+      const isStandaloneHeading = line.length < 50 && 
+                               !line.match(/[.,:;!?]$/) && 
+                               line === line.charAt(0).toUpperCase() + line.slice(1) &&
+                               line.toUpperCase() !== title.toUpperCase();
+      
+      // If we have a standalone heading and accumulated paragraph text
+      if (isStandaloneHeading && currentParagraph) {
+        html += `<p>${currentParagraph}</p>\n`;
+        html += `<h2>${line}</h2>\n`;
+        currentParagraph = '';
+      }
+      // If we have a standalone heading without accumulated text
+      else if (isStandaloneHeading) {
+        html += `<h2>${line}</h2>\n`;
+      }
+      // Otherwise add to current paragraph
+      else {
+        if (currentParagraph) currentParagraph += ' ';
+        currentParagraph += line;
       }
     }
+    
+    // Add any remaining paragraph
+    if (currentParagraph) {
+      html += `<p>${currentParagraph}</p>\n`;
+    }
+    
+    // If we ended up with no content, add a placeholder paragraph
+    if (!html.includes('<p>') && !html.includes('<h2>')) {
+      html += `<p>Start writing here...</p>\n`;
+    }
+    
+    console.log('✅ Converted HTML length:', html.length);
+    console.log('🔍 HTML preview:', html.substring(0, 200) + '...');
     
     return html;
     
   } catch (error) {
-    console.error('Error converting PDF text to HTML:', error);
-    return `<p>Error converting content: ${error.message}</p>`;
+    console.error('❌ Error converting PDF text to HTML:', error);
+    return `<p>Error converting content: ${error.message}</p><p>Start writing here...</p>`;
   }
 }

@@ -3,7 +3,22 @@
     'double-page-left': isDoublePageLeft, 
     'double-page-right': isDoublePageRight 
   }" ref="pageElement">
+    <!-- Debug info -->
+    <div v-if="debugMode" class="debug-info">
+      <p>Page ID: {{ page.id }}</p>
+      <p>Content length: {{ page.content ? page.content.length : 0 }}</p>
+      <p>Content preview: {{ page.content ? page.content.substring(0, 50) + '...' : 'No content' }}</p>
+    </div>
+    
+    <!-- Fallback static content for PDF content -->
+    <div v-if="page.content && page.content.includes('TRY LANG IF NAGAWNA PA REN')" class="static-content">
+      <h2>TRY LANG IF NAGAWNA PA REN</h2>
+      <p>This is the PDF content that should be displayed.</p>
+    </div>
+    
+    <!-- Regular editable content -->
     <div 
+      v-else
       class="page-content"
       contenteditable="true"
       data-placeholder="Continue writing..."
@@ -42,6 +57,10 @@ const props = defineProps({
   isInDoublePageMode: {
     type: Boolean,
     default: false
+  },
+  debugMode: {
+    type: Boolean,
+    default: true // Enable debug mode by default for troubleshooting
   }
 });
 
@@ -59,23 +78,58 @@ const contentElement = ref(null);
 
 onMounted(() => {
   if (contentElement.value) {
-    contentElement.value.innerHTML = props.page.content || '';
-    // Ensure placeholder shows if empty
-    updatePlaceholderVisibility();
-    nextTick(() => {
-      checkForOverflow();
-    });
+    console.log('🔄 NormalPage mounted, setting content...');
+    console.log('📄 Content to set:', props.page.content ? props.page.content.substring(0, 100) + '...' : 'empty');
+    
+    // Set the content with a small delay to ensure proper rendering
+    setTimeout(() => {
+      contentElement.value.innerHTML = props.page.content || '';
+      console.log('✅ Content set in editor, length:', contentElement.value.innerHTML.length);
+      
+      // Ensure placeholder shows if empty
+      updatePlaceholderVisibility();
+      
+      // Force a layout recalculation
+      contentElement.value.style.display = 'none';
+      contentElement.value.offsetHeight; // Force reflow
+      contentElement.value.style.display = '';
+      
+      nextTick(() => {
+        checkForOverflow();
+        // Emit an update to ensure parent components know content is set
+        emit('update:content', contentElement.value.innerHTML);
+      });
+    }, 100);
   }
 });
 
 // Watch for content changes from parent
 watch(() => props.page.content, (newContent) => {
-  if (contentElement.value && newContent !== contentElement.value.innerHTML) {
-    contentElement.value.innerHTML = newContent || '';
-    updatePlaceholderVisibility();
-    nextTick(() => {
-      checkForOverflow();
-    });
+  console.log('🔎 NormalPage detected content change from parent');
+  console.log('📄 New content:', newContent ? newContent.substring(0, 100) + '...' : 'empty');
+  
+  if (contentElement.value) {
+    // Always update content to ensure PDF content is displayed
+    console.log('🔄 Updating editor content...');
+    
+    // Set with timeout to ensure proper rendering
+    setTimeout(() => {
+      contentElement.value.innerHTML = newContent || '';
+      console.log('✅ Updated editor content, length:', contentElement.value.innerHTML.length);
+      
+      updatePlaceholderVisibility();
+      
+      // Force a layout recalculation
+      contentElement.value.style.display = 'none';
+      contentElement.value.offsetHeight; // Force reflow
+      contentElement.value.style.display = '';
+      
+      nextTick(() => {
+        checkForOverflow();
+        // Emit an update to ensure parent components know content is updated
+        emit('update:content', contentElement.value.innerHTML);
+      });
+    }, 100);
   }
 });
 
@@ -550,36 +604,73 @@ defineExpose({
 }
 
 .page-content {
-  font-size: clamp(1.6rem, 1.2vw, 1.6rem);
-  line-height: 1.8;
-  color: #333;
-  margin: 0;
-  text-align: justify;
-  font-weight: 400;
-  min-height: 3rem;
+  flex: 1;
+  padding: 8vh;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 2.2vh;
+  line-height: 1.6;
+  overflow-y: auto;
+  white-space: pre-wrap;
   outline: none;
-  font-family: 'Caveat', cursive;
-  overflow: hidden;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  max-height: calc(127.26vh - 6vh - 6vh - 2rem);
-  direction: ltr;
-  unicode-bidi: normal;
-  padding: 0 8vh; /* Default horizontal padding */
 }
 
-/* Better placeholder handling */
-.page-content:empty::before,
+.page-content:empty::before {
+  content: attr(data-placeholder);
+  color: #aaa;
+  pointer-events: none;
+}
+
 .page-content.empty::before {
   content: attr(data-placeholder);
-  color: #999;
-  font-style: italic;
+  color: #aaa;
   pointer-events: none;
-  display: block;
 }
 
-[contenteditable="true"]:focus {
-  outline: none;
+.double-page-left {
+  border-right: 1px solid #ddd;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.double-page-right {
+  border-left: 1px solid #ddd;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* Debug info styles */
+.debug-info {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: rgba(255, 255, 0, 0.2);
+  padding: 10px;
+  font-size: 12px;
+  z-index: 100;
+  max-width: 100%;
+  overflow: hidden;
+  border-bottom: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+}
+
+/* Static content styles */
+.static-content {
+  flex: 1;
+  padding: 8vh;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 2.2vh;
+  line-height: 1.6;
+  overflow-y: auto;
+}
+
+.static-content h2 {
+  font-size: 2.5vh;
+  margin-bottom: 2vh;
+  font-weight: bold;
+}
+
+.static-content p {
+  margin-bottom: 1.5vh;
 }
 
 @media (max-width: 1200px) {
